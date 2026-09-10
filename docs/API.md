@@ -1,4 +1,4 @@
-# 审批 API
+# 记账与审批 API
 
 API 分为两个调用方：ClawChat Liveware 页面和已经绑定 ClawChat 的 Agent。
 
@@ -9,6 +9,27 @@ Liveware 身份由 ClawChat 可信代理注入，不接受浏览器正文中的 
 ```http
 GET /api/session
 ```
+
+返回当前成员的 `user`、`requests` 和 `ledger`。`ledger` 只包含当前 ClawChat `user_id` 名下的记录。
+
+### 从 Liveware 记账
+
+```http
+POST /api/ledger
+Content-Type: application/json
+
+{
+  "kind": "expense",
+  "amount": 38,
+  "category": "餐饮",
+  "date": "2026-09-10",
+  "note": "午饭"
+}
+```
+
+`kind` 可用值为 `expense` 或 `income`。`amount` 必须大于 0；成员身份由 ClawChat 代理注入，不接受正文中的 `user_id`。
+
+### 从 Liveware 提交购物申请
 
 ```http
 POST /api/requests
@@ -38,6 +59,32 @@ Content-Type: application/json
 ## Agent 接口
 
 Agent 接口需要 `Authorization: Bearer <AGENT_API_TOKEN>`。令牌只能保存在 Agent 或服务端环境中。
+
+### 从聊天记账
+
+```http
+POST /api/agent/ledger
+Content-Type: application/json
+
+{
+  "id": "可选的幂等记账 ID",
+  "memberId": "当前 ClawChat 发言人的 user_id",
+  "memberNickname": "显示昵称",
+  "kind": "expense",
+  "amount": 38,
+  "category": "餐饮",
+  "date": "2026-09-10",
+  "note": "午饭"
+}
+```
+
+如果 Agent 因超时重试，必须复用相同的 `id`，防止重复入账。
+
+```http
+GET /api/agent/ledger?memberId={current_clawchat_user_id}
+```
+
+查询时必须传入当前对话成员的稳定 `user_id`，不得用昵称代替。
 
 ### 从聊天创建申请
 
@@ -90,4 +137,3 @@ Content-Type: application/json
 ```
 
 Agent 应先通过 ClawChat 好友能力确认准确身份；遇到同名好友时必须让用户选择。
-

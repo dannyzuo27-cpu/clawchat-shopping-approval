@@ -1,8 +1,8 @@
-# ClawChat Shopping Approval
+# ClawChat Household Finance & Shopping Approval
 
-在 ClawChat 里把“我想买这个”变成一张家庭购物审批单。
+在 ClawChat 里记录日常收支，再把“我想买这个”变成一张家庭购物审批单。
 
-你可以直接在 Agent 聊天框里提出购买申请，也可以在 Liveware 页面填写。两个入口会同步到同一条记录：**Agent 负责初审，家人负责最终决定。**
+记账和购物申请都可以从 Agent 聊天框或 Liveware 页面提交。账本按 ClawChat 身份隔离；购物申请中 **Agent 负责初审，家人负责最终决定。**
 
 > 当前状态：MVP / Experimental。已经完成本地双入口数据链路测试，正在验证不同 ClawChat Agent 环境中的安装流程。
 
@@ -11,6 +11,9 @@
 
 ## 能做什么
 
+- 从 ClawChat 聊天或 Liveware 记录日常收入、支出、分类、日期和备注
+- 显示当月收入、支出与记账笔数
+- 按 ClawChat `user_id` 隔离每位成员的个人账本
 - 从 ClawChat 聊天或 Liveware 页面提交购物申请
 - 两个入口共用同一个申请 ID，不会生成两份审批单
 - 显示谁提出、谁共同审批
@@ -32,7 +35,7 @@ npm start
 
 服务默认运行在 `http://127.0.0.1:4174`。
 
-然后让已经接入 ClawChat 的 Agent 阅读 [INSTALL_FOR_AGENT.md](INSTALL_FOR_AGENT.md)，完成 Skill、Liveware 和共同审批人的配置。
+然后让已经接入 ClawChat 的 Agent 阅读 [INSTALL_FOR_AGENT.md](INSTALL_FOR_AGENT.md)，完成 Skill、Liveware、记账和共同审批人的配置。
 
 > `public/index.html` 不能通过双击文件直接运行。页面需要访问后端审批记录和 ClawChat 身份，请先执行 `npm start`，再打开上面的服务地址。
 
@@ -45,7 +48,9 @@ npm start
 
 请先阅读 README.md、INSTALL_FOR_AGENT.md 和 skill/SKILL.md。
 不要修改你现有的模型、名字、人设、记忆和其他 Skill。
-聊天框与 Liveware 必须使用同一个审批服务和申请 ID。
+记账和购物审批都必须使用同一个服务。
+聊天框与 Liveware 的购物申请必须共用同一个申请 ID。
+请额外测试：在聊天中说“今天午饭花了38”，并确认记录出现在 Liveware 账本中。
 Agent 只负责初审，ClawChat 中指定的共同审批人负责终审。
 安装后请分别测试聊天提交、页面提交、Agent 初审和人类终审。
 ```
@@ -53,18 +58,18 @@ Agent 只负责初审，ClawChat 中指定的共同审批人负责终审。
 ## 它怎么工作
 
 ```text
-ClawChat 聊天框 ─┐
-                 ├── 统一审批记录 ── Agent 初审 ── 人类终审
+ClawChat 聊天框 ─┐                           ┌─ 个人账本
+                 ├── 统一家庭消费服务 ─└─ 购物申请 ─ Agent 初审 ─ 人类终审
 Liveware 页面 ───┘
 ```
 
-成员身份使用 ClawChat `user_id`，昵称只负责显示。图片理解取决于你绑定的 Agent 和模型，本项目不绑定模型 API。
+成员身份使用 ClawChat `user_id`，昵称只负责显示。每位成员默认只能在 Liveware 中看到自己的账本。图片理解取决于你绑定的 Agent 和模型，本项目不绑定模型 API。
 
 ## 文档
 
 - [Agent 安装说明](INSTALL_FOR_AGENT.md)
 - [部署与安全](docs/DEPLOYMENT.md)
-- [审批 API](docs/API.md)
+- [记账与审批 API](docs/API.md)
 - [Agent 行为协议](skill/SKILL.md)
 
 ## 本地预览
@@ -81,8 +86,8 @@ DEV_USER_NICKNAME=本地预览
 ## 项目结构
 
 ```text
-public/                 Liveware 页面
-server.mjs              审批 API 与本地数据存储
+public/                 记账与审批 Liveware 页面
+server.mjs              记账/审批 API 与本地数据存储
 skill/SKILL.md          Agent 使用规则
 INSTALL_FOR_AGENT.md    Agent 安装步骤
 docs/                   部署、接口和演示素材
@@ -93,4 +98,3 @@ docs/                   部署、接口和演示素材
 这是一个家庭协作工具，不提供财务、法律或购买建议。Agent 输出只是初审意见，最终决定由使用者自己作出。
 
 MIT License
-

@@ -1,5 +1,6 @@
 :root { color-scheme: dark; font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0b0d12; color: #f5f7fb; }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 10% -10%, #3d275d 0, transparent 32rem), radial-gradient(circle at 100% 10%, #193c4a 0, transparent 28rem), #0b0d12; }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
@@ -10,18 +11,24 @@ button { cursor: pointer; }
 .mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; color: #15121d; background: linear-gradient(135deg, #d8b4fe, #6ee7f5); font-weight: 900; }
 .identity { color: #aeb5c5; font-size: 13px; }
 main { display: grid; grid-template-columns: minmax(260px, .8fr) minmax(440px, 1.4fr); gap: 20px; padding-top: 38px; }
-.hero { grid-row: span 2; padding: 44px 20px 20px 4px; }
+.hero { padding: 44px 20px 20px 4px; }
 .hero p { color: #8bf0df; font-size: 12px; letter-spacing: .18em; }
 .hero h1 { font-size: clamp(44px, 6vw, 78px); line-height: .96; letter-spacing: -.06em; margin: 20px 0 28px; }
 .hero > span { display: block; max-width: 420px; color: #aab1c0; line-height: 1.8; }
 .card { background: #151820c7; border: 1px solid #ffffff16; box-shadow: 0 24px 70px #0008; backdrop-filter: blur(18px); border-radius: 22px; overflow: hidden; }
+.workspace { min-width: 0; display: grid; gap: 14px; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border: 1px solid #ffffff16; border-radius: 15px; background: #11141bc7; }
+.tabs button { min-height: 40px; border: 0; border-radius: 10px; color: #858d9e; background: transparent; font-weight: 750; }
+.tabs button.active { color: #11131a; background: linear-gradient(135deg, #d8b4fe, #6ee7f5); }
+.panel { display: none; gap: 20px; }
+.panel.active { display: grid; }
 .section-title { display: flex; justify-content: space-between; align-items: center; padding: 17px 20px; border-bottom: 1px solid #ffffff12; font-weight: 700; }
 .section-title button, .review, .review-actions button { border: 1px solid #ffffff20; background: #ffffff0b; color: #eef1f8; padding: 8px 12px; border-radius: 10px; }
 form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 20px; }
 label { display: grid; gap: 8px; color: #aeb5c5; font-size: 13px; }
 .wide { grid-column: 1 / -1; }
-input, textarea { width: 100%; border: 1px solid #ffffff18; border-radius: 12px; padding: 12px 13px; color: #fff; background: #090b10bb; outline: none; }
-input:focus, textarea:focus { border-color: #a78bfa; box-shadow: 0 0 0 3px #a78bfa20; }
+input, textarea, select { width: 100%; border: 1px solid #ffffff18; border-radius: 12px; padding: 12px 13px; color: #fff; background: #090b10bb; outline: none; }
+input:focus, textarea:focus, select:focus { border-color: #a78bfa; box-shadow: 0 0 0 3px #a78bfa20; }
 textarea { resize: vertical; min-height: 78px; }
 .primary { grid-column: 1 / -1; border: 0; border-radius: 12px; padding: 13px; color: #15121c; background: linear-gradient(135deg, #d8b4fe, #6ee7f5); font-weight: 800; }
 .list { display: grid; }
@@ -37,9 +44,19 @@ textarea { resize: vertical; min-height: 78px; }
 .decision span, .human span { color: #8d95a5; font-size: 11px; }.decision strong { color: #d8b4fe; }.human strong { color: #83f2c5; }.decision p, .human p { grid-column: 1 / -1; margin: 2px 0 0; font-size: 13px; }
 .review { margin-top: 14px; width: 100%; border-color: #bda1ff50; color: #d8b4fe; }
 .empty { padding: 38px 22px; color: #8d95a5; text-align: center; line-height: 1.7; }
+.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.summary { min-width: 0; padding: 17px; display: grid; gap: 8px; border-radius: 16px; }
+.summary span { color: #8d95a5; font-size: 11px; }
+.summary strong { overflow: hidden; color: #f6f7fb; font-size: clamp(17px, 2.2vw, 25px); text-overflow: ellipsis; }
+.ledger-list { display: grid; }
+.ledger-entry { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 17px 20px; border-bottom: 1px solid #ffffff10; }
+.ledger-entry:last-child { border-bottom: 0; }
+.ledger-kind { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px; background: #ff808018; color: #ff9d9d; font-weight: 850; }
+.ledger-kind.income { color: #83f2c5; background: #1f9d6d22; }
+.ledger-entry strong { font-size: 15px; }.ledger-entry p { margin: 4px 0; color: #aeb5c5; font-size: 12px; }.ledger-entry small { color: #687083; font-size: 9px; letter-spacing: .1em; }
+.money { color: #ff9d9d; font-size: 15px; }.money.income { color: #83f2c5; }
 dialog { width: min(520px, calc(100% - 28px)); border: 1px solid #ffffff1f; border-radius: 20px; color: #fff; background: #171a22; box-shadow: 0 30px 90px #000c; }
 dialog::backdrop { background: #05060ac7; backdrop-filter: blur(8px); }
 dialog form { display: grid; grid-template-columns: 1fr; }.review-actions { display: flex; flex-wrap: wrap; gap: 8px; }.review-actions .approve { color: #83f2c5; }.review-actions .danger { color: #ff9d9d; }
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 11px 16px; border: 1px solid #ffffff1f; border-radius: 999px; background: #20242e; box-shadow: 0 12px 40px #000a; }
-@media (max-width: 760px) { .shell { padding: 12px 12px 46px; }.topbar small { display: none; } main { grid-template-columns: 1fr; padding-top: 14px; }.hero { grid-row: auto; padding: 32px 8px 16px; }.hero h1 { font-size: 52px; }.card { border-radius: 18px; } form { grid-template-columns: 1fr; }.wide, .primary { grid-column: 1; } }
-
+@media (max-width: 760px) { .shell { padding: 12px 12px 46px; }.topbar small { display: none; } main { grid-template-columns: 1fr; padding-top: 14px; }.hero { padding: 32px 8px 16px; }.hero h1 { font-size: 52px; }.card { border-radius: 18px; } form { grid-template-columns: 1fr; }.wide, .primary { grid-column: 1; }.summary-grid { gap: 7px; }.summary { padding: 13px 11px; }.ledger-entry { padding: 15px 14px; }.money { font-size: 13px; } }

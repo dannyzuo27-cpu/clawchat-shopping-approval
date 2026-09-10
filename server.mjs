@@ -24,7 +24,19 @@ const mime = {
 };
 
 function emptyStore() {
-  return { version: 1, members: {}, relationships: {}, requests: [], updatedAt: new Date().toISOString() };
+  return { version: 2, members: {}, relationships: {}, requests: [], ledger: [], updatedAt: new Date().toISOString() };
+}
+
+function normalizeStore(store) {
+  return {
+    ...emptyStore(),
+    ...store,
+    members: store?.members || {},
+    relationships: store?.relationships || {},
+    requests: Array.isArray(store?.requests) ? store.requests : [],
+    ledger: Array.isArray(store?.ledger) ? store.ledger : [],
+    version: 2,
+  };
 }
 
 async function loadDotEnv() {
@@ -45,7 +57,7 @@ async function loadDotEnv() {
 async function loadStore() {
   await mkdir(dataRoot, { recursive: true });
   try {
-    return JSON.parse(await readFile(storePath, "utf8"));
+    return normalizeStore(JSON.parse(await readFile(storePath, "utf8")));
   } catch {
     const store = emptyStore();
     await saveStore(store);
@@ -129,6 +141,35 @@ function createRequest(store, input, source) {
   return item;
 }
 
+function createLedgerEntry(store, input, source) {
+  const now = new Date().toISOString();
+  const member = ensureMember(store, { userId: input.memberId, nickname: input.memberNickname || "ClawChat 用户" });
+  const amount = Number(input.amount);
+  const kind = input.kind === "income" ? "income" : "expense";
+  const date = String(input.date || now.slice(0, 10)).trim();
+  const category = String(input.category || (kind === "income" ? "其他收入" : "其他支出")).trim();
+  const note = String(input.note || "").trim();
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("positive_amount_required");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("invalid_date");
+  if (!category) throw new Error("category_required");
+  const entry = {
+    id: input.id || `txn-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    source,
+    memberId: member.userId,
+    memberNickname: member.nickname,
+    kind,
+    amount: Math.round(amount * 100) / 100,
+    category,
+    date,
+    note,
+    createdAt: now,
+    updatedAt: now,
+  };
+  if (store.ledger.some((item) => item.id === entry.id)) throw new Error("duplicate_ledger_id");
+  store.ledger.unshift(entry);
+  return entry;
+}
+
 function visible(store, userId) {
   return store.requests.filter((item) => item.applicantId === userId || item.approverId === userId);
 }
@@ -140,6 +181,18 @@ async function handleApi(req, res, url) {
     if (!agentAuthorized(req)) return send(res, 401, { error: "invalid_agent_token" });
     const store = await loadStore();
     if (req.method === "GET" && url.pathname === "/api/agent/requests") return send(res, 200, { requests: store.requests, updatedAt: store.updatedAt });
+    if (req.method === "GET" && url.pathname === "/api/agent/ledger") {
+      const memberId = url.searchParams.get("memberId");
+      if (!memberId) return send(res, 400, { error: "member_id_required" });
+      return send(res, 200, { entries: store.ledger.filter((item) => item.memberId === memberId), updatedAt: store.updatedAt });
+    }
+    if (req.method === "POST" && url.pathname === "/api/agent/ledger") {
+      try {
+        const entry = createLedgerEntry(store, await json(req), "clawchat-chat");
+        await saveStore(store);
+        return send(res, 201, { entry });
+      } catch (error) { return send(res, 400, { error: error.message }); }
+    }
     if (req.method === "POST" && url.pathname === "/api/agent/requests") {
       try {
         const item = createRequest(store, await json(req), "clawchat-chat");
@@ -178,7 +231,20 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && url.pathname === "/api/session") {
     await saveStore(store);
-    return send(res, 200, { user: member, requests: visible(store, member.userId), updatedAt: store.updatedAt });
+    return send(res, 200, {
+      user: member,
+      requests: visible(store, member.userId),
+      ledger: store.ledger.filter((item) => item.memberId === member.userId),
+      updatedAt: store.updatedAt,
+    });
+  }
+  if (req.method === "POST" && url.pathname === "/api/ledger") {
+    try {
+      const body = await json(req);
+      const entry = createLedgerEntry(store, { ...body, memberId: member.userId, memberNickname: member.nickname }, "liveware");
+      await saveStore(store);
+      return send(res, 201, { entry });
+    } catch (error) { return send(res, 400, { error: error.message }); }
   }
   if (req.method === "POST" && url.pathname === "/api/requests") {
     try {
@@ -223,4 +289,3 @@ export const server = createServer(async (req, res) => {
 });
 
 if (process.env.NODE_ENV !== "test") server.listen(port, host, () => console.log(`Liveware: http://${host}:${port}`));
-

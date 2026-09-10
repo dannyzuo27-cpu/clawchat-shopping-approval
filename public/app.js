@@ -1,5 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
-const state = { user: null, requests: [], selectedId: null };
+const state = { user: null, requests: [], ledger: [], selectedId: null };
 const verdicts = { pending: "等待初审", approve: "建议批准", reject: "建议不批", "need-info": "需要补充", conditional: "建议附条件" };
 const statuses = { pending: "等待终审", approved: "已批准", rejected: "未批准", conditional: "附条件批准" };
 
@@ -39,6 +39,23 @@ function render() {
     </article>`;
   }).join("");
   document.querySelectorAll("[data-review]").forEach((button) => button.addEventListener("click", () => openReview(button.dataset.review)));
+
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthEntries = state.ledger.filter((entry) => entry.date.startsWith(currentMonth));
+  const total = (kind) => monthEntries.filter((entry) => entry.kind === kind).reduce((sum, entry) => sum + Number(entry.amount), 0);
+  $("#monthExpense").textContent = formatMoney(total("expense"));
+  $("#monthIncome").textContent = formatMoney(total("income"));
+  $("#monthCount").textContent = String(monthEntries.length);
+  $("#ledgerEmpty").hidden = state.ledger.length > 0;
+  $("#ledgerList").innerHTML = state.ledger.map((entry) => `<article class="ledger-entry">
+    <span class="ledger-kind ${escapeHtml(entry.kind)}">${entry.kind === "income" ? "收" : "支"}</span>
+    <div><strong>${escapeHtml(entry.category)}</strong><p>${escapeHtml(entry.note || "无备注")} · ${escapeHtml(entry.date)}</p><small>${entry.source === "liveware" ? "LIVEWARE" : "CLAWCHAT"} · ${escapeHtml(entry.memberNickname)}</small></div>
+    <b class="money ${escapeHtml(entry.kind)}">${entry.kind === "income" ? "+" : "-"}${formatMoney(entry.amount)}</b>
+  </article>`).join("");
+}
+
+function formatMoney(value) {
+  return `¥${Number(value || 0).toFixed(2)}`;
 }
 
 async function load() {
@@ -46,6 +63,7 @@ async function load() {
     const body = await api("/api/session");
     state.user = body.user;
     state.requests = body.requests;
+    state.ledger = body.ledger || [];
     render();
   } catch (error) {
     state.user = null;
@@ -64,7 +82,15 @@ function openReview(id) {
 }
 
 $("#toggleForm").addEventListener("click", () => { $("#requestForm").hidden = !$("#requestForm").hidden; });
-$("#refresh").addEventListener("click", load);
+$("#toggleLedgerForm").addEventListener("click", () => { $("#ledgerForm").hidden = !$("#ledgerForm").hidden; });
+document.querySelectorAll(".refresh").forEach((button) => button.addEventListener("click", load));
+document.querySelectorAll("[data-tab]").forEach((button) => button.addEventListener("click", () => {
+  document.querySelectorAll("[data-tab]").forEach((item) => item.classList.toggle("active", item === button));
+  $("#approvalPanel").classList.toggle("active", button.dataset.tab === "approval");
+  $("#ledgerPanel").classList.toggle("active", button.dataset.tab === "ledger");
+}));
+const ledgerDate = $("#ledgerForm input[name='date']");
+ledgerDate.value = new Date().toISOString().slice(0, 10);
 $("#requestForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(event.currentTarget));
@@ -75,6 +101,18 @@ $("#requestForm").addEventListener("submit", async (event) => {
     toast("已提交，等待 Agent 初审");
     await load();
   } catch (error) { toast(`提交失败：${error.message}`); }
+});
+$("#ledgerForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = Object.fromEntries(new FormData(event.currentTarget));
+  try {
+    await api("/api/ledger", { method: "POST", body: JSON.stringify(data) });
+    event.currentTarget.reset();
+    ledgerDate.value = new Date().toISOString().slice(0, 10);
+    event.currentTarget.hidden = true;
+    toast("已写入你的账本");
+    await load();
+  } catch (error) { toast(`记账失败：${error.message}`); }
 });
 document.querySelectorAll("[data-status]").forEach((button) => button.addEventListener("click", async () => {
   const reason = new FormData($("#reviewForm")).get("reason")?.trim();
@@ -90,4 +128,3 @@ document.querySelectorAll("[data-status]").forEach((button) => button.addEventLi
 
 load();
 setInterval(load, 15000);
-

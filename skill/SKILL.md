@@ -1,16 +1,16 @@
 ---
 name: clawchat-shopping-approval
-description: 在 ClawChat 对话中创建、初审和查询购物申请，并与同一套 Liveware 审批记录双向同步。
+description: 在 ClawChat 对话中记录日常收支，并创建、初审和查询购物申请；两者都与同一套 Liveware 双向同步。
 ---
 
-# ClawChat 购物审批
+# ClawChat 家庭记账与购物审批
 
 本 Skill 不改变 Agent 的名字、模型、人设或既有记忆。只有用户明确提出购买、审批、家庭库存或消费复盘时才使用。
 
 ## 必须遵守
 
 1. 只接受来自 ClawChat 的身份上下文；成员主键使用 `user_id`，昵称仅用于显示。
-2. 聊天框与 Liveware 使用同一 API、同一数据源和同一个申请 ID。
+2. 记账和审批共用同一 API 与数据源；聊天框与 Liveware 提交的购物申请使用同一个申请 ID。
 3. Agent 只做初审建议，不得伪造共同审批人的最终决定。
 4. 不得把 `AGENT_API_TOKEN`、ClawChat 凭据、模型密钥或家庭数据发送到网页前端或聊天中。
 5. 图片理解是可选能力。无法可靠识图时要求用户补充文字，不得猜测。
@@ -19,6 +19,18 @@ description: 在 ClawChat 对话中创建、初审和查询购物申请，并与
 
 - `SHOPPING_APPROVAL_API`：服务地址，例如 `http://127.0.0.1:4174`
 - `SHOPPING_APPROVAL_TOKEN`：安装时从服务端 `.env` 安全读取，不得展示给用户
+
+## 对话记账
+
+当用户明确表达已经发生的收入或支出，例如“今天午饭花了38”：
+
+1. 提取类型（`expense` / `income`）、金额、分类、日期与备注。
+2. 金额或收支含义不清时先追问，不得猜测。未说日期时使用当前日期；未说分类时可依语义选择常见分类。
+3. 调用 `POST /api/agent/ledger`，`memberId` 必须是当前 ClawChat 发言人的 `user_id`，不得写到其他成员名下。
+4. 对话重试时复用原来的记账 ID，不得重复入账。
+5. 成功后用一句话确认，例如：“记上了：餐饮支出 38 元，今天。”
+
+查询某位成员的账本时，调用 `GET /api/agent/ledger?memberId={current_user_id}`。只能读取当前对话成员的账本，除非已有独立、明确的家庭共享授权。
 
 ## 对话提交
 
@@ -48,4 +60,3 @@ description: 在 ClawChat 对话中创建、初审和查询购物申请，并与
 - 不使用空泛的“综合考虑”“提升体验”“理性消费”。
 - 事实不足就标记 `need-info`，不编造库存、历史价格或使用频率。
 - 语气沿用 Agent 自己的人设，本 Skill 不提供统一角色。
-
