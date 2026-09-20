@@ -3,84 +3,79 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#11131a" />
-    <title>家庭消费 Liveware</title>
+    <meta name="theme-color" content="#f5f1e9" />
+    <title>消费审判广场</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div class="shell">
-      <header class="topbar">
-        <div><span class="mark">CC</span><strong>家庭消费</strong><small>ClawChat Liveware</small></div>
-        <span id="identity" class="identity">正在确认身份</span>
-      </header>
-      <main>
-        <section class="hero">
-          <p>ONE HOME · ONE LEDGER</p>
-          <h1>花了多少，<br />想买什么。</h1>
-          <span>日常消费直接记账，额外购物先走审批。聊天框和 Liveware 共用同一份记录。</span>
-        </section>
-        <div class="workspace">
-          <nav class="tabs" aria-label="功能切换">
-            <button class="active" data-tab="approval">购物审批</button>
-            <button data-tab="ledger">日常记账</button>
-          </nav>
-          <div id="approvalPanel" class="panel active">
-            <section class="composer card">
-              <div class="section-title"><span>新申请</span><button id="toggleForm">＋ 提交购物申请</button></div>
-              <form id="requestForm" hidden>
-                <label>商品名称<input name="title" required placeholder="例如：降噪耳机" /></label>
-                <label>价格（可选）<input name="amount" inputmode="decimal" placeholder="例如：1999" /></label>
-                <label class="wide">购买理由<textarea name="reason" required placeholder="为什么现在需要它？"></textarea></label>
-                <label class="wide">家中同类物品（可选）<textarea name="inventory" placeholder="已有物品、使用频率、当前状况"></textarea></label>
-                <label class="wide">图片链接（可选）<input name="imageUrl" type="url" placeholder="由支持识图的 Agent 或图床提供" /></label>
-                <button class="primary" type="submit">提交给 Agent 初审</button>
-              </form>
-            </section>
-            <section class="board card">
-              <div class="section-title"><span>审批记录</span><button class="refresh">刷新</button></div>
-              <div id="empty" class="empty" hidden>还没有申请。你可以在这里提交，也可以直接在 ClawChat 里告诉 Agent。</div>
-              <div id="list" class="list"></div>
-            </section>
-          </div>
-          <div id="ledgerPanel" class="panel">
-            <section class="summary-grid" aria-label="本月账本摘要">
-              <article class="summary card"><span>本月支出</span><strong id="monthExpense">¥0.00</strong></article>
-              <article class="summary card"><span>本月收入</span><strong id="monthIncome">¥0.00</strong></article>
-              <article class="summary card"><span>本月笔数</span><strong id="monthCount">0</strong></article>
-            </section>
-            <section class="composer card">
-              <div class="section-title"><span>记一笔</span><button id="toggleLedgerForm">＋ 新增记账</button></div>
-              <form id="ledgerForm" hidden>
-                <label>类型<select name="kind"><option value="expense">支出</option><option value="income">收入</option></select></label>
-                <label>金额<input name="amount" required inputmode="decimal" placeholder="例如：38" /></label>
-                <label>分类<input name="category" required placeholder="例如：餐饮" /></label>
-                <label>日期<input name="date" type="date" required /></label>
-                <label class="wide">备注（可选）<input name="note" placeholder="例如：午饭" /></label>
-                <button class="primary" type="submit">写入我的账本</button>
-              </form>
-            </section>
-            <section class="board card">
-              <div class="section-title"><span>我的账本</span><button class="refresh">刷新</button></div>
-              <div id="ledgerEmpty" class="empty" hidden>还没有记录。在这里记一笔，或直接在 ClawChat 里对 Agent 说“今天午饭花了38”。</div>
-              <div id="ledgerList" class="ledger-list"></div>
-            </section>
-          </div>
+    <header class="topbar">
+      <a class="brand" href="#top"><span class="brand-mark">≠</span><span><strong>消费审判所</strong><small>CLAWCHAT LIVEWARE</small></span></a>
+      <nav><a class="active" href="#plaza">广场</a><button id="openAgentTop" class="nav-link">审判官</button></nav>
+      <div class="top-actions"><span id="identity">正在连接</span><button id="openSubmit" class="submit-cta">投递一笔</button></div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">PUBLIC CONSUMPTION COURT / 24H LIVE</p>
+          <h1>别急着下单。<br /><em>先听句实话。</em></h1>
+          <p class="hero-desc">把想买的东西交给 Agent 审判。<br />有理的通过，离谱的留在广场上公开处刑。</p>
+          <div class="hero-actions"><button id="openSubmitHero" class="dark-button">我也想被审判 <span>↗</span></button><button id="openAgentHero" class="text-button">认识 Hermes</button></div>
         </div>
-      </main>
-    </div>
-    <dialog id="reviewDialog">
-      <form method="dialog" id="reviewForm">
-        <h2>共同审批</h2>
-        <p id="reviewTitle"></p>
-        <label>最终理由<textarea name="reason" required placeholder="留下批准或不批准的具体理由"></textarea></label>
-        <div class="review-actions">
-          <button value="cancel">取消</button>
-          <button type="button" data-status="rejected" class="danger">不批准</button>
-          <button type="button" data-status="conditional">附条件</button>
-          <button type="button" data-status="approved" class="approve">批准</button>
+        <aside class="live-verdict">
+          <span class="live-dot">LIVE · 刚刚</span>
+          <p>“你不是在买耳机，是在给前五副耳机招第六个舍友。”</p>
+          <div><span>Hermes</span><strong>驳回</strong></div>
+        </aside>
+      </section>
+
+      <section id="plaza" class="plaza-shell">
+        <div class="plaza-head">
+          <div><span class="section-index">01</span><h2>今日审判</h2></div>
+          <div class="filters" role="group" aria-label="广场筛选"><button class="active" data-filter="all">全部</button><button data-filter="reject">驳回现场</button><button data-filter="approve">难得通过</button></div>
         </div>
+        <div class="content-grid">
+          <section><div id="feed" class="feed" aria-live="polite"></div><div id="feedEmpty" class="empty" hidden>这个分类暂时没有审判记录。</div></section>
+          <aside class="agent-card">
+            <div class="agent-avatar">H<span>✦</span></div>
+            <p class="eyebrow">RESIDENT JUDGE</p>
+            <h2>Hermes</h2>
+            <p>消费欲望翻译官，擅长从购买理由里找出那句你不敢对自己说的话。</p>
+            <div class="agent-stats"><span><b>私聊</b><small>默认私密</small></span><span><b>广场</b><small>自选公开</small></span></div>
+            <button id="addAgent" class="agent-button">去 ClawChat 加好友 ↗</button>
+            <small class="privacy-note">私聊默认不公开，只有你主动选择才会匿名进入广场。</small>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer><strong>管不住手，至少管得住理由。</strong><span>Powered by ClawChat · Agent defaults to Hermes</span></footer>
+
+    <dialog id="submitDialog">
+      <form id="requestForm">
+        <header><div><p class="eyebrow">NEW CASE</p><h2>投递一笔消费申请</h2></div><button type="button" class="close" data-close="submitDialog">×</button></header>
+        <p class="form-intro">请尽量说实话。Hermes 会结合你的理由和已有替代品，给出一句不拐弯的审判。</p>
+        <div class="form-grid">
+          <label>想买什么<input name="title" required placeholder="例如：第六副头戴式耳机" /></label>
+          <label>价格<input name="amount" inputmode="decimal" placeholder="2299" /></label>
+          <label class="wide">你的购买理由<textarea name="reason" required placeholder="为什么非得现在买？"></textarea></label>
+          <label class="wide">已有的替代品<input name="inventory" placeholder="家里已经有什么，上次用是什么时候" /></label>
+          <label class="wide">商品图片链接（可选）<input name="imageUrl" type="url" placeholder="https://" /></label>
+        </div>
+        <label class="publish-choice"><input name="publishToPlaza" type="checkbox" checked /><span><strong>审判完成后匿名发布到广场</strong><small>不展示 ClawChat 昵称、user_id 或私聊内容</small></span></label>
+        <button class="form-submit" type="submit">交给 Hermes 审判</button>
       </form>
     </dialog>
+
+    <dialog id="agentDialog" class="agent-dialog">
+      <button type="button" class="close" data-close="agentDialog">×</button>
+      <div class="agent-avatar large">H<span>✦</span></div>
+      <p class="eyebrow">CLAWCHAT AGENT</p><h2>Hermes</h2>
+      <blockquote>“我不反对你花钱。我只是对你每次都把冲动叫做刚需这件事有意见。”</blockquote>
+      <ul><li>先给结论，不写八股文</li><li>只吐槽消费行为，不攻击人</li><li>必须引用申请中的真实证据</li></ul>
+      <button id="addAgentDialog" class="agent-button">去 ClawChat 加好友 ↗</button>
+    </dialog>
+
     <div id="toast" class="toast" hidden></div>
     <script type="module" src="/app.js"></script>
   </body>

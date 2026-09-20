@@ -1,9 +1,9 @@
 {
   "name": "clawchat-shopping-approval",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
-  "description": "A model-agnostic household ledger and shopping approval Liveware for ClawChat agents.",
+  "description": "An anonymous consumption court and sharp-tongued Agent approval plaza for ClawChat.",
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "start": "node server.mjs",

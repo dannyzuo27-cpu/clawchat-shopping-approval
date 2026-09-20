@@ -1,28 +1,24 @@
-# ClawChat Household Finance & Shopping Approval
+# ClawChat 消费审判广场
 
-在 ClawChat 里记录日常收支，再把“我想买这个”变成一张家庭购物审批单。
+别急着下单，先把购买理由交给 Agent，再让广场上的人投票。
 
-记账和购物申请都可以从 Agent 聊天框或 Liveware 页面提交。账本按 ClawChat 身份隔离；购物申请中 **Agent 负责初审，家人负责最终决定。**
+这是一个为 ClawChat 设计的匿名消费审判 Liveware：用户既可以在页面投稿，也可以在 Agent 私聊里说“我想买……”。Hermes 根据真实信息给出一句不拐弯的判词；用户主动选择公开后，申请才会匿名进入广场。
 
-> 当前状态：MVP / Experimental。已经完成本地双入口数据链路测试，正在验证不同 ClawChat Agent 环境中的安装流程。
+> 当前状态：MVP / Experimental。默认审判官是 Hermes，但后端协议不绑定模型或 Agent 框架。
 
-<!-- 真实联调后，把演示 GIF 放到 docs/assets/demo.gif 并取消下一行注释。 -->
-<!-- ![30 秒演示](docs/assets/demo.gif) -->
+## 核心玩法
 
-## 能做什么
+- 浏览匿名消费申请和 Agent 锐评
+- 对每笔申请投“通过”或“驳回”
+- 从广场跳转 ClawChat 添加 Hermes 好友
+- 从 Liveware 页面或 ClawChat 私聊提交同一类申请
+- 私聊默认不公开；只有用户主动勾选，判词完成后才进入广场
+- 公开数据移除 ClawChat 昵称、`user_id`、共同审批人和私聊内容
+- 手机与电脑自适应
 
-- 从 ClawChat 聊天或 Liveware 记录日常收入、支出、分类、日期和备注
-- 显示当月收入、支出与记账笔数
-- 按 ClawChat `user_id` 隔离每位成员的个人账本
-- 从 ClawChat 聊天或 Liveware 页面提交购物申请
-- 两个入口共用同一个申请 ID，不会生成两份审批单
-- 显示谁提出、谁共同审批
-- Agent 给出批准、不批准、附条件或补充信息建议
-- 人类共同审批人保留最终决定权
-- 手机和电脑都能使用
-- 不限制 Agent 框架、模型或人设
+旧版账本与家庭审批 API 暂时保留，方便已有安装继续运行；它们不再是首页主叙事。
 
-## 三步开始
+## 快速开始
 
 需要 Node.js 20 或更高版本。
 
@@ -33,68 +29,58 @@ npm run setup
 npm start
 ```
 
-服务默认运行在 `http://127.0.0.1:4174`。
+本地服务默认运行在 `http://127.0.0.1:4174`。不要双击 `public/index.html`，页面依赖服务端数据和 ClawChat 身份。
 
-然后让已经接入 ClawChat 的 Agent 阅读 [INSTALL_FOR_AGENT.md](INSTALL_FOR_AGENT.md)，完成 Skill、Liveware、记账和共同审批人的配置。
-
-> `public/index.html` 不能通过双击文件直接运行。页面需要访问后端审批记录和 ClawChat 身份，请先执行 `npm start`，再打开上面的服务地址。
-
-## 发给 Agent
-
-把仓库链接和下面这段话一起发给已经接入 ClawChat 的 Agent：
-
-```text
-请帮我安装这个 ClawChat 购物审批 Liveware。
-
-请先阅读 README.md、INSTALL_FOR_AGENT.md 和 skill/SKILL.md。
-不要修改你现有的模型、名字、人设、记忆和其他 Skill。
-记账和购物审批都必须使用同一个服务。
-聊天框与 Liveware 的购物申请必须共用同一个申请 ID。
-请额外测试：在聊天中说“今天午饭花了38”，并确认记录出现在 Liveware 账本中。
-Agent 只负责初审，ClawChat 中指定的共同审批人负责终审。
-安装后请分别测试聊天提交、页面提交、Agent 初审和人类终审。
-```
-
-## 它怎么工作
-
-```text
-ClawChat 聊天框 ─┐                           ┌─ 个人账本
-                 ├── 统一家庭消费服务 ─└─ 购物申请 ─ Agent 初审 ─ 人类终审
-Liveware 页面 ───┘
-```
-
-成员身份使用 ClawChat `user_id`，昵称只负责显示。每位成员默认只能在 Liveware 中看到自己的账本。图片理解取决于你绑定的 Agent 和模型，本项目不绑定模型 API。
-
-## 文档
-
-- [Agent 安装说明](INSTALL_FOR_AGENT.md)
-- [部署与安全](docs/DEPLOYMENT.md)
-- [记账与审批 API](docs/API.md)
-- [Agent 行为协议](skill/SKILL.md)
-
-## 本地预览
-
-如果只想先看页面，可在 `.env` 中临时填写：
+只想预览时，可以在 `.env` 临时填写：
 
 ```text
 DEV_USER_ID=local-preview
 DEV_USER_NICKNAME=本地预览
 ```
 
-再运行 `npm start`。正式使用时必须删除这两项，并设置 `NODE_ENV=production`。
+正式使用必须清空这两项并设置 `NODE_ENV=production`。
 
-## 项目结构
+## 发给 Hermes
+
+把仓库链接和下面这段话发给已经接入 ClawChat 的 Hermes：
 
 ```text
-public/                 记账与审批 Liveware 页面
-server.mjs              记账/审批 API 与本地数据存储
-skill/SKILL.md          Agent 使用规则
-INSTALL_FOR_AGENT.md    Agent 安装步骤
-docs/                   部署、接口和演示素材
+请帮我安装这个 ClawChat 消费审判广场。
+
+先完整阅读 README.md、INSTALL_FOR_AGENT.md 和 skill/SKILL.md。
+不要修改你现有的模型、名字、记忆和其他 Skill。
+Liveware 页面和聊天框提交的申请必须进入同一个 API，不得重复创建。
+判词必须先给结论，再引用申请里的具体证据；不要使用“综合考虑、建议理性消费”等 AI 套话，也不要编造我的库存和历史。
+公开内容必须匿名。只有用户明确选择公开，才允许进入广场。
+安装后测试：页面投稿、聊天投稿、Hermes 回写判词、广场匿名展示和用户投票。
 ```
 
-## 说明
+## 数据流
 
-这是一个家庭协作工具，不提供财务、法律或购买建议。Agent 输出只是初审意见，最终决定由使用者自己作出。
+```text
+ClawChat 私聊 ─┐
+               ├─ 统一申请 API ─ Hermes 判词 ─ 用户选择公开 ─ 匿名广场 ─ 大家投票
+Liveware 投稿 ─┘
+```
+
+## 配置
+
+`.env` 中新增：
+
+```text
+PLAZA_AGENT_NAME=Hermes
+HERMES_CLAWCHAT_URL=https://cn.clawling.com/zh/chat/?ch=jo
+```
+
+`HERMES_CLAWCHAT_URL` 最好替换成 Hermes 在 ClawChat 的真实分享卡片或加好友链接。
+
+## 文档
+
+- [给 Agent 的安装说明](INSTALL_FOR_AGENT.md)
+- [Agent 行为协议](skill/SKILL.md)
+- [API](docs/API.md)
+- [部署与安全](docs/DEPLOYMENT.md)
+
+这是一个娱乐性质的消费决策工具，不提供财务、法律或投资建议。最终是否购买始终由用户本人决定。
 
 MIT License

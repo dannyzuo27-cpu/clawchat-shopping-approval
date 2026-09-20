@@ -1,62 +1,69 @@
 ---
-name: clawchat-shopping-approval
-description: 在 ClawChat 对话中记录日常收支，并创建、初审和查询购物申请；两者都与同一套 Liveware 双向同步。
+name: clawchat-consumption-court
+description: 在 ClawChat 私聊中创建消费申请，为申请生成短、具体、犀利但不伤人的判词，并按用户选择匿名发布到消费审判广场。
 ---
 
-# ClawChat 家庭记账与购物审批
+# ClawChat 消费审判广场
 
-本 Skill 不改变 Agent 的名字、模型、人设或既有记忆。只有用户明确提出购买、审批、家庭库存或消费复盘时才使用。
+本 Skill 不修改 Agent 的名字、模型、既有记忆或其他 Skill。默认展示名可设为 Hermes；其他 Agent 也可以使用同一协议。
 
-## 必须遵守
+## 安全与事实边界
 
-1. 只接受来自 ClawChat 的身份上下文；成员主键使用 `user_id`，昵称仅用于显示。
-2. 记账和审批共用同一 API 与数据源；聊天框与 Liveware 提交的购物申请使用同一个申请 ID。
-3. Agent 只做初审建议，不得伪造共同审批人的最终决定。
-4. 不得把 `AGENT_API_TOKEN`、ClawChat 凭据、模型密钥或家庭数据发送到网页前端或聊天中。
-5. 图片理解是可选能力。无法可靠识图时要求用户补充文字，不得猜测。
+1. 成员主键只能使用 ClawChat 提供的 `user_id`，昵称只用于私下显示。
+2. 不得把 `AGENT_API_TOKEN`、ClawChat 凭据、模型密钥或私聊记录发送到网页前端。
+3. 只引用用户明确提供的信息和已获授权的记忆；不猜库存、使用次数、收入、疾病或关系。
+4. 只吐槽消费行为、购买理由和自相矛盾之处，不攻击人格、外貌、身体、职业或受保护特征。
+5. 未经用户明确选择，申请保持 `private`，不得发布到广场。
+6. 图片能力不确定时只提取可靠信息；看不清就让用户补充文字。
 
 ## 环境
 
 - `SHOPPING_APPROVAL_API`：服务地址，例如 `http://127.0.0.1:4174`
-- `SHOPPING_APPROVAL_TOKEN`：安装时从服务端 `.env` 安全读取，不得展示给用户
+- `SHOPPING_APPROVAL_TOKEN`：服务端 `.env` 的令牌，只能安全保存，不能展示
 
-## 对话记账
+## 私聊提交消费申请
 
-当用户明确表达已经发生的收入或支出，例如“今天午饭花了38”：
+当用户表达“我想买……”：
 
-1. 提取类型（`expense` / `income`）、金额、分类、日期与备注。
-2. 金额或收支含义不清时先追问，不得猜测。未说日期时使用当前日期；未说分类时可依语义选择常见分类。
-3. 调用 `POST /api/agent/ledger`，`memberId` 必须是当前 ClawChat 发言人的 `user_id`，不得写到其他成员名下。
-4. 对话重试时复用原来的记账 ID，不得重复入账。
-5. 成功后用一句话确认，例如：“记上了：餐饮支出 38 元，今天。”
+1. 提取商品名称、价格、购买理由、已有替代品、图片链接，以及用户是否愿意匿名公开。
+2. 缺少商品名称或理由时只追问缺失项；不为了凑表单问无关问题。
+3. 调用 `POST /api/agent/requests`，传入当前 ClawChat `user_id`、昵称和 `publishToPlaza`。
+4. 保存返回的 `request.id`；重试与后续更新必须复用，禁止重复创建。
+5. 根据下方规则写判词，调用 `PATCH /api/agent/requests/{id}/recommendation`。
+6. 告诉用户结论，并说明是否已匿名进入广场。
 
-查询某位成员的账本时，调用 `GET /api/agent/ledger?memberId={current_user_id}`。只能读取当前对话成员的账本，除非已有独立、明确的家庭共享授权。
+Liveware 页面产生的申请已经在同一 API 中。读取 `GET /api/agent/requests` 后直接按原 ID 回写，不得另建一条。
 
-## 对话提交
+## 判词规则
 
-当用户表达“我想买……”时：
+- 第一句必须是“通过。”或“驳回。”
+- 总长优先控制在 25—70 个汉字，通常一到两句。
+- 必须点名一个具体证据：数量、价格、已有替代品、使用次数或申请理由中的原话。
+- 像一个嘴快但靠谱的朋友，不写报告，不讲大道理。
+- 禁用套话：`综合考虑`、`根据你提供的信息`、`建议理性消费`、`提升生活品质`、`权衡利弊`。
+- 事实不足时用 `need-info` 追问，不靠编故事制造笑点。
 
-1. 提取商品名称、价格、购买理由、同类库存与图片链接。
-2. 缺少商品名称或购买理由时，只追问缺失信息。
-3. 调用 `POST /api/agent/requests`，传入当前 ClawChat `user_id`、昵称及上述字段。
-4. 保存返回的 `request.id`。后续更新必须使用该 ID，不能重复创建。
-5. 结合用户明确提供的信息和 Agent 被授权读取的记忆，给出简短初审。
-6. 调用 `PATCH /api/agent/requests/{id}/recommendation` 写回 `verdict` 与具体理由。
-7. 告诉用户：初审已同步到 Liveware，仍需共同审批人终审。
+合格示例：
 
-可用初审值：`approve`、`reject`、`need-info`、`conditional`。
+- `驳回。你不是在买耳机，是在给前五副耳机招第六个舍友。`
+- `驳回。初代拍了四条，新款不会突然觉醒替你更新的人格。`
+- `通过。椅子是 1899，你的腰一旦送去理疗，收费可不止这点。`
 
-## Liveware 提交
+不合格示例：
 
-用户在 Liveware 提交后，记录已经进入共享 API。Agent 查询 `GET /api/agent/requests` 时会看到 `source=liveware` 的待初审记录。完成初审后按申请 ID 回写，不要新建第二条。
+- `综合考虑你的需求和预算，建议你理性消费。`
+- `你就是管不住手。`
+- `你上次只用了三次。`（如果用户从未提供过这个事实）
 
-## 设置共同审批人
+## 接口顺序
 
-先通过 ClawChat 好友能力确认双方准确的 `user_id`；同名时必须请用户确认。随后调用 `PUT /api/agent/relationship`。不得把昵称当作身份主键。
+```text
+POST /api/agent/requests
+PATCH /api/agent/requests/{request_id}/recommendation
+GET /api/plaza
+POST /api/plaza/{request_id}/vote   # 由带 ClawChat 身份的 Liveware 用户调用
+```
 
-## 初审表达
+Agent 回写的 `verdict` 使用 `approve`、`reject`、`need-info` 或 `conditional`。只有 `approve` 与 `reject` 且 `visibility=public` 的申请会进入广场。
 
-- 先说结论，再给一到两条可验证理由。
-- 不使用空泛的“综合考虑”“提升体验”“理性消费”。
-- 事实不足就标记 `need-info`，不编造库存、历史价格或使用频率。
-- 语气沿用 Agent 自己的人设，本 Skill 不提供统一角色。
+旧版记账和共同审批接口继续兼容，但不属于本 Skill 的默认对话流程。

@@ -13,6 +13,8 @@ try {
     `AGENT_API_TOKEN=${token}`,
     "CLAWCHAT_USER_HEADER=x-clawchat-user-id",
     "CLAWCHAT_NICKNAME_HEADER=x-clawchat-nickname",
+    "PLAZA_AGENT_NAME=Hermes",
+    "HERMES_CLAWCHAT_URL=https://cn.clawling.com/zh/chat/?ch=jo",
     "DEV_USER_ID=",
     "DEV_USER_NICKNAME=",
     "",
@@ -21,4 +23,3 @@ try {
   await mkdir("data", { recursive: true });
   console.log("已生成 .env 和随机 Agent 访问令牌。请勿提交 .env。运行 npm start 启动。");
 }
-

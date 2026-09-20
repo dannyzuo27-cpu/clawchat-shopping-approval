@@ -1,130 +1,161 @@
-const $ = (selector) => document.querySelector(selector);
-const state = { user: null, requests: [], ledger: [], selectedId: null };
-const verdicts = { pending: "等待初审", approve: "建议批准", reject: "建议不批", "need-info": "需要补充", conditional: "建议附条件" };
-const statuses = { pending: "等待终审", approved: "已批准", rejected: "未批准", conditional: "附条件批准" };
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+const state = {
+  user: null,
+  items: [],
+  filter: "all",
+  agentName: "Hermes",
+  agentProfileUrl: "https://cn.clawling.com/zh/chat/?ch=jo",
+};
+
+const verdictLabels = { approve: "通过", reject: "驳回" };
+const productEmoji = { 耳机: "🎧", 相机: "📷", 椅: "🪑", 手表: "⌚", 打印机: "🖨️", 手办: "🎲", 鞋: "👟", 包: "👜" };
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
 }
 
-function toast(message) {
-  const el = $("#toast");
-  el.textContent = message;
-  el.hidden = false;
-  clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => { el.hidden = true; }, 2600);
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: { "content-type": "application/json", ...(options.headers || {}) },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || `请求失败（${response.status}）`);
+  return payload;
 }
 
-async function api(path, options = {}) {
-  const response = await fetch(path, { cache: "no-store", ...options, headers: { "content-type": "application/json", ...(options.headers || {}) } });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);
-  return body;
+let toastTimer;
+function toast(message) {
+  const element = $("#toast");
+  element.textContent = message;
+  element.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { element.hidden = true; }, 2800);
+}
+
+function relativeTime(date) {
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 60000));
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return `${minutes} 分钟前`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)} 小时前`;
+  return `${Math.floor(minutes / 1440)} 天前`;
+}
+
+function visual(item) {
+  if (item.imageUrl) return `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.title)}" loading="lazy" />`;
+  const match = Object.entries(productEmoji).find(([word]) => item.title.includes(word));
+  return `<span aria-hidden="true">${escapeHtml(item.emoji || match?.[1] || "🛒")}</span>`;
 }
 
 function render() {
-  $("#identity").textContent = state.user ? `${state.user.nickname} · 已连接` : "未连接 ClawChat";
-  $("#empty").hidden = state.requests.length > 0;
-  $("#list").innerHTML = state.requests.map((item) => {
-    const canReview = item.approverId && item.approverId === state.user?.userId && item.status === "pending";
-    return `<article class="request">
-      <div class="request-head"><span class="source">${item.source === "liveware" ? "LIVEWARE" : "CLAWCHAT"}</span><span class="status ${escapeHtml(item.status)}">${statuses[item.status] || item.status}</span></div>
-      <h2>${escapeHtml(item.title)} ${item.amount ? `<small>¥${escapeHtml(item.amount)}</small>` : ""}</h2>
-      <p class="people">${escapeHtml(item.applicantNickname)} 提出 · ${escapeHtml(item.approverNickname)} 共同审批</p>
-      <p>${escapeHtml(item.reason)}</p>
-      ${item.inventory ? `<p class="muted">家中现有：${escapeHtml(item.inventory)}</p>` : ""}
-      <div class="decision"><span>Agent 初审</span><strong>${verdicts[item.agentVerdict] || item.agentVerdict}</strong><p>${escapeHtml(item.agentReason)}</p></div>
-      ${item.status !== "pending" ? `<div class="human"><span>人类终审</span><strong>${statuses[item.status]}</strong><p>${escapeHtml(item.humanReason)}</p></div>` : ""}
-      ${canReview ? `<button class="review" data-review="${escapeHtml(item.id)}">由我终审</button>` : ""}
-    </article>`;
+  const items = state.items.filter((item) => state.filter === "all" || item.agentVerdict === state.filter);
+  $("#feedEmpty").hidden = items.length > 0;
+  $("#feed").innerHTML = items.map((item, index) => {
+    const verdict = item.agentVerdict === "approve" ? "approve" : "reject";
+    const votes = item.voteCounts || { approve: 0, reject: 0 };
+    const selected = item.viewerVote || "";
+    return `
+      <article class="case-card ${verdict}">
+        <header class="case-meta">
+          <div class="anonymous"><span>?</span><div><strong>${escapeHtml(item.publicAlias || "一位陌生人")}</strong><small>${relativeTime(item.updatedAt)}</small></div></div>
+          <span class="case-no">CASE ${String(index + 1).padStart(2, "0")}</span>
+        </header>
+        <div class="case-title"><div><h3>${escapeHtml(item.title)}</h3><p>${item.amount ? `¥${escapeHtml(item.amount)}` : "价格未填"}</p></div><span class="verdict-stamp">${verdictLabels[verdict]}</span></div>
+        <p class="reason"><b>申请理由</b>${escapeHtml(item.reason)}</p>
+        <div class="product-visual">${visual(item)}</div>
+        ${item.inventory ? `<p class="inventory"><span>已有替代</span>${escapeHtml(item.inventory)}</p>` : ""}
+        <blockquote><small>${escapeHtml(item.agentName || state.agentName)} 的判词</small>${escapeHtml(item.agentReason)}</blockquote>
+        <footer class="vote-row">
+          <button class="vote ${selected === "approve" ? "selected" : ""}" data-vote="approve" data-id="${escapeHtml(item.id)}"><span>✓</span> 通过 <b>${Number(votes.approve || 0).toLocaleString()}</b></button>
+          <button class="vote ${selected === "reject" ? "selected" : ""}" data-vote="reject" data-id="${escapeHtml(item.id)}"><span>×</span> 驳回 <b>${Number(votes.reject || 0).toLocaleString()}</b></button>
+          <span class="comments">◌ ${Number(item.commentsCount || 0)}</span>
+        </footer>
+      </article>`;
   }).join("");
-  document.querySelectorAll("[data-review]").forEach((button) => button.addEventListener("click", () => openReview(button.dataset.review)));
-
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const monthEntries = state.ledger.filter((entry) => entry.date.startsWith(currentMonth));
-  const total = (kind) => monthEntries.filter((entry) => entry.kind === kind).reduce((sum, entry) => sum + Number(entry.amount), 0);
-  $("#monthExpense").textContent = formatMoney(total("expense"));
-  $("#monthIncome").textContent = formatMoney(total("income"));
-  $("#monthCount").textContent = String(monthEntries.length);
-  $("#ledgerEmpty").hidden = state.ledger.length > 0;
-  $("#ledgerList").innerHTML = state.ledger.map((entry) => `<article class="ledger-entry">
-    <span class="ledger-kind ${escapeHtml(entry.kind)}">${entry.kind === "income" ? "收" : "支"}</span>
-    <div><strong>${escapeHtml(entry.category)}</strong><p>${escapeHtml(entry.note || "无备注")} · ${escapeHtml(entry.date)}</p><small>${entry.source === "liveware" ? "LIVEWARE" : "CLAWCHAT"} · ${escapeHtml(entry.memberNickname)}</small></div>
-    <b class="money ${escapeHtml(entry.kind)}">${entry.kind === "income" ? "+" : "-"}${formatMoney(entry.amount)}</b>
-  </article>`).join("");
-}
-
-function formatMoney(value) {
-  return `¥${Number(value || 0).toFixed(2)}`;
 }
 
 async function load() {
   try {
-    const body = await api("/api/session");
-    state.user = body.user;
-    state.requests = body.requests;
-    state.ledger = body.ledger || [];
+    const [plaza, config] = await Promise.all([api("/api/plaza"), api("/api/config")]);
+    state.items = plaza.items || [];
+    state.agentName = config.agentName || "Hermes";
+    state.agentProfileUrl = config.agentProfileUrl || state.agentProfileUrl;
+    $$(".agent-card h2, .agent-dialog h2").forEach((element) => { element.textContent = state.agentName; });
     render();
   } catch (error) {
-    state.user = null;
-    render();
-    if (error.message === "open_in_clawchat") toast("请从 ClawChat Liveware 入口打开");
-    else toast(`读取失败：${error.message}`);
+    toast(error.message);
+  }
+  try {
+    const session = await api("/api/session");
+    state.user = session.user;
+    $("#identity").textContent = session.user?.nickname || "ClawChat 用户";
+  } catch {
+    $("#identity").textContent = "在 ClawChat 内打开";
   }
 }
 
-function openReview(id) {
-  const item = state.requests.find((request) => request.id === id);
-  if (!item) return;
-  state.selectedId = id;
-  $("#reviewTitle").textContent = `${item.applicantNickname} 想买：${item.title}`;
-  $("#reviewDialog").showModal();
+async function vote(id, choice) {
+  try {
+    const result = await api(`/api/plaza/${encodeURIComponent(id)}/vote`, { method: "POST", body: JSON.stringify({ choice }) });
+    const item = state.items.find((entry) => entry.id === id);
+    if (item) {
+      item.voteCounts = result.voteCounts;
+      item.viewerVote = result.viewerVote;
+      render();
+    }
+  } catch (error) {
+    toast(error.message === "open_in_clawchat" ? "请在 ClawChat 里打开后参与投票" : error.message);
+  }
 }
 
-$("#toggleForm").addEventListener("click", () => { $("#requestForm").hidden = !$("#requestForm").hidden; });
-$("#toggleLedgerForm").addEventListener("click", () => { $("#ledgerForm").hidden = !$("#ledgerForm").hidden; });
-document.querySelectorAll(".refresh").forEach((button) => button.addEventListener("click", load));
-document.querySelectorAll("[data-tab]").forEach((button) => button.addEventListener("click", () => {
-  document.querySelectorAll("[data-tab]").forEach((item) => item.classList.toggle("active", item === button));
-  $("#approvalPanel").classList.toggle("active", button.dataset.tab === "approval");
-  $("#ledgerPanel").classList.toggle("active", button.dataset.tab === "ledger");
-}));
-const ledgerDate = $("#ledgerForm input[name='date']");
-ledgerDate.value = new Date().toISOString().slice(0, 10);
-$("#requestForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const data = Object.fromEntries(new FormData(event.currentTarget));
-  try {
-    await api("/api/requests", { method: "POST", body: JSON.stringify(data) });
-    event.currentTarget.reset();
-    event.currentTarget.hidden = true;
-    toast("已提交，等待 Agent 初审");
-    await load();
-  } catch (error) { toast(`提交失败：${error.message}`); }
+function openAgent() { $("#agentDialog").showModal(); }
+function addAgent() { window.open(state.agentProfileUrl, "_blank", "noopener,noreferrer"); }
+
+$("#feed").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-vote]");
+  if (button) vote(button.dataset.id, button.dataset.vote);
 });
-$("#ledgerForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const data = Object.fromEntries(new FormData(event.currentTarget));
-  try {
-    await api("/api/ledger", { method: "POST", body: JSON.stringify(data) });
-    event.currentTarget.reset();
-    ledgerDate.value = new Date().toISOString().slice(0, 10);
-    event.currentTarget.hidden = true;
-    toast("已写入你的账本");
-    await load();
-  } catch (error) { toast(`记账失败：${error.message}`); }
-});
-document.querySelectorAll("[data-status]").forEach((button) => button.addEventListener("click", async () => {
-  const reason = new FormData($("#reviewForm")).get("reason")?.trim();
-  if (!reason) return toast("请填写具体理由");
-  try {
-    await api(`/api/requests/${encodeURIComponent(state.selectedId)}/review`, { method: "PATCH", body: JSON.stringify({ status: button.dataset.status, reason }) });
-    $("#reviewDialog").close();
-    $("#reviewForm").reset();
-    toast("终审结果已同步");
-    await load();
-  } catch (error) { toast(`审批失败：${error.message}`); }
+
+$$('[data-filter]').forEach((button) => button.addEventListener("click", () => {
+  state.filter = button.dataset.filter;
+  $$('[data-filter]').forEach((item) => item.classList.toggle("active", item === button));
+  render();
 }));
 
+$("#openSubmit").addEventListener("click", () => $("#submitDialog").showModal());
+$("#openSubmitHero").addEventListener("click", () => $("#submitDialog").showModal());
+$("#openAgentTop").addEventListener("click", openAgent);
+$("#openAgentHero").addEventListener("click", openAgent);
+$("#addAgent").addEventListener("click", addAgent);
+$("#addAgentDialog").addEventListener("click", addAgent);
+$$('[data-close]').forEach((button) => button.addEventListener("click", () => $(`#${button.dataset.close}`).close()));
+$$('dialog').forEach((dialog) => dialog.addEventListener("click", (event) => {
+  if (event.target === dialog) dialog.close();
+}));
+
+$("#requestForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = Object.fromEntries(new FormData(form));
+  data.publishToPlaza = data.publishToPlaza === "on";
+  const submit = form.querySelector('[type="submit"]');
+  submit.disabled = true;
+  submit.textContent = "正在投递…";
+  try {
+    await api("/api/requests", { method: "POST", body: JSON.stringify(data) });
+    form.reset();
+    form.elements.publishToPlaza.checked = true;
+    $("#submitDialog").close();
+    toast(`已交给 ${state.agentName}，审判完成后会出现在广场`);
+  } catch (error) {
+    toast(error.message === "open_in_clawchat" ? "请在 ClawChat 里打开这个 Liveware 再投递" : error.message);
+  } finally {
+    submit.disabled = false;
+    submit.textContent = `交给 ${state.agentName} 审判`;
+  }
+});
+
 load();
-setInterval(load, 15000);
+setInterval(load, 20000);

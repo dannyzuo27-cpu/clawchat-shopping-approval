@@ -56,3 +56,59 @@ test("health endpoint and shared chat/liveware flow", async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("public plaza stays anonymous and supports one switchable vote per user", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "clawchat-plaza-"));
+  process.env.NODE_ENV = "test";
+  process.env.DATA_DIR = dir;
+  process.env.AGENT_API_TOKEN = "plaza-token";
+  const { server } = await import(`../server.mjs?plaza=${Date.now()}`);
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const agentHeaders = { authorization: "Bearer plaza-token", "content-type": "application/json" };
+  const userHeaders = { "x-clawchat-user-id": "secret-user", "x-clawchat-nickname": encodeURIComponent("不应公开的昵称"), "content-type": "application/json" };
+  try {
+    const created = await fetch(`${base}/api/agent/requests`, {
+      method: "POST",
+      headers: agentHeaders,
+      body: JSON.stringify({ applicantId: "secret-user", applicantNickname: "不应公开的昵称", title: "第六副耳机", reason: "颜色很好看", inventory: "已有五副", publishToPlaza: true }),
+    }).then((response) => response.json());
+    await fetch(`${base}/api/agent/requests/${created.request.id}/recommendation`, {
+      method: "PATCH",
+      headers: agentHeaders,
+      body: JSON.stringify({ verdict: "reject", reason: "驳回。你是在给前五副耳机招舍友。", agentName: "Hermes" }),
+    });
+
+    const plaza = await fetch(`${base}/api/plaza`).then((response) => response.json());
+    const published = plaza.items.find((item) => item.id === created.request.id);
+    assert.equal(published.publicAlias, "一位陌生人");
+    assert.equal(published.agentName, "Hermes");
+    assert.equal("applicantId" in published, false);
+    assert.equal("approverId" in published, false);
+    assert.equal(JSON.stringify(published).includes("不应公开的昵称"), false);
+
+    const firstVote = await fetch(`${base}/api/plaza/${created.request.id}/vote`, {
+      method: "POST", headers: userHeaders, body: JSON.stringify({ choice: "approve" }),
+    }).then((response) => response.json());
+    assert.equal(firstVote.voteCounts.approve, 1);
+    const switchedVote = await fetch(`${base}/api/plaza/${created.request.id}/vote`, {
+      method: "POST", headers: userHeaders, body: JSON.stringify({ choice: "reject" }),
+    }).then((response) => response.json());
+    assert.equal(switchedVote.voteCounts.approve, 0);
+    assert.equal(switchedVote.voteCounts.reject, 1);
+
+    const privateCreated = await fetch(`${base}/api/agent/requests`, {
+      method: "POST",
+      headers: agentHeaders,
+      body: JSON.stringify({ applicantId: "secret-user", title: "私密申请", reason: "不想公开", publishToPlaza: false }),
+    }).then((response) => response.json());
+    await fetch(`${base}/api/agent/requests/${privateCreated.request.id}/recommendation`, {
+      method: "PATCH", headers: agentHeaders, body: JSON.stringify({ verdict: "approve", reason: "通过。" }),
+    });
+    const refreshed = await fetch(`${base}/api/plaza`).then((response) => response.json());
+    assert.equal(refreshed.items.some((item) => item.id === privateCreated.request.id), false);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    await rm(dir, { recursive: true, force: true });
+  }
+});

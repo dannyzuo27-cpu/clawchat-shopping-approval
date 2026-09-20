@@ -1,110 +1,84 @@
-# 记账与审批 API
+# 消费审判广场 API
 
-API 分为两个调用方：ClawChat Liveware 页面和已经绑定 ClawChat 的 Agent。
+API 分为公开广场、ClawChat Liveware 和 Agent 三类调用方。
+
+## 公开接口
+
+```http
+GET /api/config
+GET /api/plaza
+```
+
+`/api/config` 返回审判官显示名和 ClawChat 好友入口。`/api/plaza` 只返回已经完成 `approve` 或 `reject` 判词、且用户明确选择公开的申请。
+
+公开结果不会包含申请人的 ClawChat `user_id`、真实昵称、共同审批人或私聊内容。
 
 ## Liveware 接口
 
-Liveware 身份由 ClawChat 可信代理注入，不接受浏览器正文中的 `user_id`。
+Liveware 身份必须由 ClawChat 可信代理注入，不接受请求正文中的 `user_id`。
 
-```http
-GET /api/session
-```
-
-返回当前成员的 `user`、`requests` 和 `ledger`。`ledger` 只包含当前 ClawChat `user_id` 名下的记录。
-
-### 从 Liveware 记账
-
-```http
-POST /api/ledger
-Content-Type: application/json
-
-{
-  "kind": "expense",
-  "amount": 38,
-  "category": "餐饮",
-  "date": "2026-09-10",
-  "note": "午饭"
-}
-```
-
-`kind` 可用值为 `expense` 或 `income`。`amount` 必须大于 0；成员身份由 ClawChat 代理注入，不接受正文中的 `user_id`。
-
-### 从 Liveware 提交购物申请
+### 提交申请
 
 ```http
 POST /api/requests
 Content-Type: application/json
 
 {
-  "title": "人体工学椅",
-  "amount": "1999",
-  "reason": "改善长期伏案的坐姿",
-  "inventory": "目前只有普通餐椅",
-  "imageUrl": ""
+  "title": "第六副头戴式耳机",
+  "amount": "2299",
+  "reason": "新颜色很适合我",
+  "inventory": "家里已有 5 副耳机",
+  "imageUrl": "",
+  "publishToPlaza": true
 }
 ```
+
+`publishToPlaza=false` 时，申请和判词都保持私有。
+
+### 广场投票
 
 ```http
-PATCH /api/requests/{request_id}/review
+POST /api/plaza/{request_id}/vote
 Content-Type: application/json
 
-{
-  "status": "approved",
-  "reason": "正确坐姿有助于减少后续理疗费用"
-}
+{ "choice": "reject" }
 ```
 
-终审 `status` 可用值：`approved`、`rejected`、`conditional`。只有指定的共同审批人可以终审。
+`choice` 为 `approve` 或 `reject`。同一 ClawChat 用户对同一申请只保留一个选择；改投时会自动扣除旧票并计入新票。
+
+### 当前会话
+
+```http
+GET /api/session
+```
+
+用于读取当前成员自己的私有申请和兼容账本数据。
 
 ## Agent 接口
 
-Agent 接口需要 `Authorization: Bearer <AGENT_API_TOKEN>`。令牌只能保存在 Agent 或服务端环境中。
+请求头必须包含 `Authorization: Bearer <AGENT_API_TOKEN>`。
 
-### 从聊天记账
-
-```http
-POST /api/agent/ledger
-Content-Type: application/json
-
-{
-  "id": "可选的幂等记账 ID",
-  "memberId": "当前 ClawChat 发言人的 user_id",
-  "memberNickname": "显示昵称",
-  "kind": "expense",
-  "amount": 38,
-  "category": "餐饮",
-  "date": "2026-09-10",
-  "note": "午饭"
-}
-```
-
-如果 Agent 因超时重试，必须复用相同的 `id`，防止重复入账。
-
-```http
-GET /api/agent/ledger?memberId={current_clawchat_user_id}
-```
-
-查询时必须传入当前对话成员的稳定 `user_id`，不得用昵称代替。
-
-### 从聊天创建申请
+### 从私聊创建申请
 
 ```http
 POST /api/agent/requests
 Content-Type: application/json
 
 {
-  "applicantId": "来自 ClawChat 会话的 user_id",
-  "applicantNickname": "显示昵称",
-  "title": "降噪耳机",
-  "amount": "2999",
-  "reason": "通勤使用",
-  "inventory": "家中已有其他品牌无线头戴式耳机"
+  "id": "可选的幂等申请 ID",
+  "applicantId": "当前 ClawChat 发言人的 user_id",
+  "applicantNickname": "私下显示昵称",
+  "title": "口袋相机",
+  "amount": "3499",
+  "reason": "有了它我一定认真拍视频",
+  "inventory": "初代只发布过 4 条，已有运动相机",
+  "publishToPlaza": true
 }
 ```
 
-服务会返回申请 ID。后续更新必须使用该 ID，不能重新创建一条记录。
+如果 Agent 因超时重试，必须复用相同 `id`，防止重复建单。
 
-### 读取并回写初审
+### 读取申请并回写判词
 
 ```http
 GET /api/agent/requests
@@ -116,24 +90,20 @@ Content-Type: application/json
 
 {
   "verdict": "reject",
-  "reason": "家里已有同类耳机，当前申请没有说明现有设备无法继续使用"
+  "reason": "驳回。初代拍了四条，新款不会突然觉醒替你更新的人格。",
+  "agentName": "Hermes"
 }
 ```
 
-`verdict` 可用值：`approve`、`reject`、`need-info`、`conditional`。
+`verdict` 可用值为 `approve`、`reject`、`need-info`、`conditional`。只有前两种会进入公开广场。
 
-### 设置共同审批人
+## 兼容接口
 
-```http
-PUT /api/agent/relationship
-Content-Type: application/json
+旧版仍保留：
 
-{
-  "applicantId": "申请人的 ClawChat user_id",
-  "applicantNickname": "申请人昵称",
-  "coApproverId": "共同审批人的 ClawChat user_id",
-  "coApproverNickname": "共同审批人昵称"
-}
-```
+- `POST /api/ledger`
+- `GET|POST /api/agent/ledger`
+- `PUT /api/agent/relationship`
+- `PATCH /api/requests/{request_id}/review`
 
-Agent 应先通过 ClawChat 好友能力确认准确身份；遇到同名好友时必须让用户选择。
+它们用于既有安装迁移，不是新版首页的主流程。
