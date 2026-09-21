@@ -81,8 +81,10 @@ Content-Type: application/json
 ### 读取申请并回写判词
 
 ```http
-GET /api/agent/requests
+GET /api/agent/requests?applicantId=当前会话的ClawChat用户ID
 ```
+
+必须提供 `applicantId`；接口只返回该用户的申请，不能跨用户批量读取。已安装的 Hermes Skill 使用 `scripts/agent-bridge.mjs pending <user_id>` 调用它。
 
 ```http
 PATCH /api/agent/requests/{request_id}/recommendation

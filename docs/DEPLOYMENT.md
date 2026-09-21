@@ -26,6 +26,8 @@ npm start
 
 默认 JSON 存储面向个人 MVP。多人、多家庭或高并发使用时，应替换成数据库，并按 `household_id` 与 ClawChat `user_id` 做服务端隔离。
 
+当前页面提交不会自动触发 Hermes 模型调用；用户需在 ClawChat 私聊里主动要求处理待审申请。这样可避免公开页面被他人反复投稿后产生无法控制的推理费用。
+
 ## ClawChat 身份
 
 默认从可信请求头读取身份：
@@ -58,4 +60,3 @@ CLAWCHAT_NICKNAME_HEADER=实际昵称请求头
 - 混合：Agent 在本地，Liveware/API 在云端，双方通过统一 API 同步。
 
 无论选择哪种模式，聊天框和 Liveware 都必须使用同一份数据和同一套申请 ID。
-

@@ -14,7 +14,7 @@ try {
     "CLAWCHAT_USER_HEADER=x-clawchat-user-id",
     "CLAWCHAT_NICKNAME_HEADER=x-clawchat-nickname",
     "PLAZA_AGENT_NAME=Hermes",
-    "HERMES_CLAWCHAT_URL=https://cn.clawling.com/zh/chat/?ch=jo",
+    "CLAWCHAT_AGENT_USERNAME=",
     "DEV_USER_ID=",
     "DEV_USER_NICKNAME=",
     "",

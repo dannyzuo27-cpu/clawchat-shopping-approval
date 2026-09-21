@@ -14,7 +14,7 @@ const host = process.env.HOST || "127.0.0.1";
 const userHeader = (process.env.CLAWCHAT_USER_HEADER || "x-clawchat-user-id").toLowerCase();
 const nicknameHeader = (process.env.CLAWCHAT_NICKNAME_HEADER || "x-clawchat-nickname").toLowerCase();
 const agentName = process.env.PLAZA_AGENT_NAME || "Hermes";
-const agentProfileUrl = process.env.HERMES_CLAWCHAT_URL || "https://cn.clawling.com/zh/chat/?ch=jo";
+const agentUsername = process.env.CLAWCHAT_AGENT_USERNAME || "";
 
 const mime = {
   ".html": "text/html; charset=utf-8",
@@ -271,7 +271,7 @@ function plazaItems(store, viewerId = "") {
 
 async function handleApi(req, res, url) {
   if (url.pathname === "/api/health") return send(res, 200, { ok: true });
-  if (req.method === "GET" && url.pathname === "/api/config") return send(res, 200, { agentName, agentProfileUrl });
+  if (req.method === "GET" && url.pathname === "/api/config") return send(res, 200, { agentName, agentUsername });
   if (req.method === "GET" && url.pathname === "/api/plaza") {
     const store = await loadStore();
     return send(res, 200, { items: plazaItems(store, viewer(req)?.userId), updatedAt: store.updatedAt });
@@ -280,7 +280,11 @@ async function handleApi(req, res, url) {
   if (url.pathname.startsWith("/api/agent/")) {
     if (!agentAuthorized(req)) return send(res, 401, { error: "invalid_agent_token" });
     const store = await loadStore();
-    if (req.method === "GET" && url.pathname === "/api/agent/requests") return send(res, 200, { requests: store.requests.filter((item) => !item.demo), updatedAt: store.updatedAt });
+    if (req.method === "GET" && url.pathname === "/api/agent/requests") {
+      const applicantId = url.searchParams.get("applicantId");
+      if (!applicantId) return send(res, 400, { error: "applicant_id_required" });
+      return send(res, 200, { requests: store.requests.filter((item) => !item.demo && item.applicantId === applicantId), updatedAt: store.updatedAt });
+    }
     if (req.method === "GET" && url.pathname === "/api/agent/ledger") {
       const memberId = url.searchParams.get("memberId");
       if (!memberId) return send(res, 400, { error: "member_id_required" });
@@ -395,7 +399,7 @@ async function serveStatic(res, url) {
   let path = join(publicRoot, safe);
   try { if (!(await stat(path)).isFile()) throw new Error(); } catch { path = join(publicRoot, "index.html"); }
   const body = await readFile(path);
-  res.writeHead(200, { "content-type": mime[extname(path)] || "application/octet-stream", "cache-control": path.endsWith("index.html") ? "no-store" : "public, max-age=3600" });
+  res.writeHead(200, { "content-type": mime[extname(path)] || "application/octet-stream", "cache-control": "no-store" });
   res.end(body);
 }
 

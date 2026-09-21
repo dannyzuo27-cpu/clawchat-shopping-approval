@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="头戴式耳机插画">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#f4e8dc"/><stop offset="1" stop-color="#f8f2e9"/></linearGradient>
+    <linearGradient id="shell" x2="1" y2="1"><stop stop-color="#39484b"/><stop offset="1" stop-color="#18252b"/></linearGradient>
+    <linearGradient id="metal" x2="1"><stop stop-color="#8a9ba0"/><stop offset=".52" stop-color="#e0e7e4"/><stop offset="1" stop-color="#667b7f"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#6b665e" flood-opacity=".18"/></filter>
+  </defs>
+  <rect width="240" height="240" rx="28" fill="url(#bg)"/>
+  <ellipse cx="122" cy="204" rx="76" ry="13" fill="#d7d4cb" opacity=".56"/>
+  <g filter="url(#shadow)">
+    <path d="M53 121v-19C53 64 83 35 121 35s68 29 68 67v21" fill="none" stroke="#26383d" stroke-width="19" stroke-linecap="round"/>
+    <path d="M54 103c1-37 30-66 67-66s66 29 67 66" fill="none" stroke="url(#metal)" stroke-width="7" stroke-linecap="round"/>
+    <path d="M52 112c-14 0-25 11-25 25v30c0 14 11 25 25 25h13c9 0 16-7 16-16v-48c0-9-7-16-16-16H52Z" fill="url(#shell)"/>
+    <path d="M189 112c14 0 25 11 25 25v30c0 14-11 25-25 25h-13c-9 0-16-7-16-16v-48c0-9 7-16 16-16h13Z" fill="url(#shell)"/>
+    <rect x="47" y="122" width="27" height="62" rx="13" fill="#3f5558"/>
+    <rect x="167" y="122" width="27" height="62" rx="13" fill="#3f5558"/>
+    <path d="M57 128v47M184 128v47" stroke="#b8c9c6" stroke-width="3" stroke-linecap="round" opacity=".72"/>
+  </g>
+  <circle cx="191" cy="52" r="4" fill="#bd735c"/>
+  <path d="M192 36v-8M204 47l6-5" stroke="#bd735c" stroke-width="2" stroke-linecap="round"/>
+</svg>

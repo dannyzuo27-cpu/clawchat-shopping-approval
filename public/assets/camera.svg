@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="口袋相机插画">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#e6eeeb"/><stop offset="1" stop-color="#f5f1e8"/></linearGradient>
+    <linearGradient id="body" x2="1" y2="1"><stop stop-color="#6e8584"/><stop offset="1" stop-color="#344b50"/></linearGradient>
+    <radialGradient id="lens"><stop stop-color="#172832"/><stop offset=".55" stop-color="#304b53"/><stop offset=".8" stop-color="#111d22"/><stop offset="1" stop-color="#475e63"/></radialGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#415454" flood-opacity=".2"/></filter>
+  </defs>
+  <rect width="240" height="240" rx="28" fill="url(#bg)"/>
+  <ellipse cx="120" cy="192" rx="75" ry="11" fill="#b6c4bd" opacity=".55"/>
+  <g filter="url(#shadow)" transform="rotate(-7 120 123)">
+    <rect x="39" y="78" width="162" height="102" rx="17" fill="url(#body)"/>
+    <rect x="49" y="69" width="53" height="14" rx="4" fill="#536b6b"/>
+    <rect x="55" y="92" width="43" height="8" rx="4" fill="#a7bdb7" opacity=".72"/>
+    <circle cx="135" cy="128" r="47" fill="#1d3035" stroke="#91a7a3" stroke-width="5"/>
+    <circle cx="135" cy="128" r="36" fill="url(#lens)" stroke="#0c171c" stroke-width="4"/>
+    <circle cx="135" cy="128" r="16" fill="#112128" stroke="#66858b" stroke-width="3"/>
+    <circle cx="127" cy="118" r="5" fill="#d6e7df" opacity=".85"/>
+    <rect x="54" y="120" width="25" height="32" rx="4" fill="#394f53"/>
+    <circle cx="65" cy="163" r="4" fill="#d1c6a7"/>
+  </g>
+  <path d="M198 67c8 3 13 9 14 18" fill="none" stroke="#ad8065" stroke-width="2" stroke-linecap="round"/>
+</svg>

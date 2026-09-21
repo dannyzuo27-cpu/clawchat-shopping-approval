@@ -3,58 +3,67 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f5f1e9" />
+    <meta name="theme-color" content="#f7f8f6" />
     <title>消费审判广场</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles.css?v=20260921b" />
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="#top"><span class="brand-mark">≠</span><span><strong>消费审判所</strong><small>CLAWCHAT LIVEWARE</small></span></a>
-      <nav><a class="active" href="#plaza">广场</a><button id="openAgentTop" class="nav-link">审判官</button></nav>
-      <div class="top-actions"><span id="identity">正在连接</span><button id="openSubmit" class="submit-cta">投递一笔</button></div>
+      <a class="brand" href="/"><span class="brand-mark">判</span><span><strong>消费审判广场</strong><small>ClawChat Liveware</small></span></a>
+      <nav><a class="active" href="#plaza">逛广场</a><button id="openAgentTop" class="nav-link">认识 Hermes</button></nav>
+      <div class="top-actions"><span id="identity">正在连接</span><button id="openSubmit" class="submit-cta">＋ 发起审判</button></div>
     </header>
 
     <main id="top">
       <section class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">PUBLIC CONSUMPTION COURT / 24H LIVE</p>
-          <h1>别急着下单。<br /><em>先听句实话。</em></h1>
-          <p class="hero-desc">把想买的东西交给 Agent 审判。<br />有理的通过，离谱的留在广场上公开处刑。</p>
-          <div class="hero-actions"><button id="openSubmitHero" class="dark-button">我也想被审判 <span>↗</span></button><button id="openAgentHero" class="text-button">认识 Hermes</button></div>
+          <p class="eyebrow"><span class="status-dot"></span> CLAWCHAT · CONSUMPTION COURT</p>
+          <h1>买之前，<br /><span>先接受审判。</span></h1>
+          <p class="hero-desc">想买的东西交给 Hermes，听一句不拐弯的实话。<br />围观别人的购物理由，也投出你的一票。</p>
+          <div class="hero-actions"><button id="openSubmitHero" class="dark-button">发起一次审判 <span>→</span></button><button id="openAgentHero" class="text-button">先认识审判官 <span>↗</span></button></div>
+          <div class="hero-tags"><span>真实理由</span><i></i><span>犀利判词</span><i></i><span>匿名公开可选</span></div>
         </div>
-        <aside class="live-verdict">
-          <span class="live-dot">LIVE · 刚刚</span>
-          <p>“你不是在买耳机，是在给前五副耳机招第六个舍友。”</p>
-          <div><span>Hermes</span><strong>驳回</strong></div>
+        <aside class="hero-example" aria-label="审判示例">
+          <div class="example-top"><span class="example-badge">一份判词 · 演示</span><span>CASE 001</span></div>
+          <div class="example-product"><div class="example-image"><img src="/assets/headphones.svg" alt="头戴式耳机插画" /></div><div><small>某位朋友想买</small><strong>第六副头戴式耳机</strong><span>¥ 2,299</span></div></div>
+          <div class="example-reason"><small>申请理由</small><p>“这个颜色很适合我，而且新的降噪肯定更好。”</p></div>
+          <div class="example-verdict"><span class="example-judge">H</span><p>“你不是在买耳机，是在给前五副耳机招第六个舍友。”</p></div>
+          <div class="example-bottom"><span>Hermes · 审判完成</span><strong>驳回</strong></div>
         </aside>
       </section>
 
+      <section class="court-guide" aria-label="如何参与">
+        <div><span class="guide-icon">01</span><p><strong>提交购物理由</strong><small>坦白说想买什么</small></p></div>
+        <span class="guide-arrow">→</span>
+        <div><span class="guide-icon">02</span><p><strong>看判词</strong><small>不兜圈，也不乱编</small></p></div>
+        <span class="guide-arrow">→</span>
+        <div><span class="guide-icon">03</span><p><strong>广场投票</strong><small>是否匿名公开由你选</small></p></div>
+      </section>
+
       <section id="plaza" class="plaza-shell">
-        <div class="plaza-head">
-          <div><span class="section-index">01</span><h2>今日审判</h2></div>
-          <div class="filters" role="group" aria-label="广场筛选"><button class="active" data-filter="all">全部</button><button data-filter="reject">驳回现场</button><button data-filter="approve">难得通过</button></div>
-        </div>
+        <div class="plaza-head"><div><p class="eyebrow">THE PUBLIC VERDICTS</p><h2>来，看看这单该不该批</h2><p class="section-desc">申请人匿名，理由和判词公开。下一票由你决定。</p></div><span class="plaza-head-mark">广场<br />审判中<span>↗</span></span></div>
         <div class="content-grid">
-          <section><div id="feed" class="feed" aria-live="polite"></div><div id="feedEmpty" class="empty" hidden>这个分类暂时没有审判记录。</div></section>
+          <section class="feed-column"><div class="feed-toolbar"><div class="filters" role="group" aria-label="广场筛选"><button class="active" data-filter="all">全部</button><button data-filter="reject">被驳回</button><button data-filter="approve">已通过</button></div><span class="feed-note">每一票都算数</span></div><div id="feed" class="feed" aria-live="polite"></div><div id="feedEmpty" class="empty" hidden>这个分类暂时没有审判记录。</div></section>
           <aside class="agent-card">
-            <div class="agent-avatar">H<span>✦</span></div>
-            <p class="eyebrow">RESIDENT JUDGE</p>
-            <h2>Hermes</h2>
-            <p>消费欲望翻译官，擅长从购买理由里找出那句你不敢对自己说的话。</p>
-            <div class="agent-stats"><span><b>私聊</b><small>默认私密</small></span><span><b>广场</b><small>自选公开</small></span></div>
-            <button id="addAgent" class="agent-button">去 ClawChat 加好友 ↗</button>
-            <small class="privacy-note">私聊默认不公开，只有你主动选择才会匿名进入广场。</small>
+            <div class="agent-top"><div class="agent-avatar">H<span>✦</span></div><span class="agent-online">ClawChat Agent</span></div>
+            <p class="eyebrow">你的消费审判官</p>
+            <h2>Hermes<span>↗</span></h2>
+            <p>“我不拦你花钱。但至少得先把理由说得像回事。”</p>
+            <div class="agent-divider"></div>
+            <div class="how-it-works"><strong>怎么玩</strong><ol><li>提交一件想买的东西</li><li>私聊 Hermes 说“处理待审申请”</li><li>公开投稿经审判后匿名出现在广场</li></ol></div>
+            <button id="addAgent" class="agent-button">复制审判官账号 <span>→</span></button>
+            <small class="privacy-note">私聊默认仅自己可见。发布到广场由你决定。</small>
           </aside>
         </div>
       </section>
     </main>
 
-    <footer><strong>管不住手，至少管得住理由。</strong><span>Powered by ClawChat · Agent defaults to Hermes</span></footer>
+    <footer><strong>买不买，是你的事。<br />先听句实话，是我们的事。</strong><span>消费审判广场 · Built for ClawChat</span></footer>
 
     <dialog id="submitDialog">
       <form id="requestForm">
         <header><div><p class="eyebrow">NEW CASE</p><h2>投递一笔消费申请</h2></div><button type="button" class="close" data-close="submitDialog">×</button></header>
-        <p class="form-intro">请尽量说实话。Hermes 会结合你的理由和已有替代品，给出一句不拐弯的审判。</p>
+        <p class="form-intro">请尽量说实话。提交后私聊 Hermes 说“处理待审申请”，它会根据你填写的事实出判词。</p>
         <div class="form-grid">
           <label>想买什么<input name="title" required placeholder="例如：第六副头戴式耳机" /></label>
           <label>价格<input name="amount" inputmode="decimal" placeholder="2299" /></label>
@@ -62,7 +71,7 @@
           <label class="wide">已有的替代品<input name="inventory" placeholder="家里已经有什么，上次用是什么时候" /></label>
           <label class="wide">商品图片链接（可选）<input name="imageUrl" type="url" placeholder="https://" /></label>
         </div>
-        <label class="publish-choice"><input name="publishToPlaza" type="checkbox" checked /><span><strong>审判完成后匿名发布到广场</strong><small>不展示 ClawChat 昵称、user_id 或私聊内容</small></span></label>
+        <label class="publish-choice"><input name="publishToPlaza" type="checkbox" /><span><strong>审判完成后匿名发布到广场</strong><small>默认不公开；勾选后也不展示 ClawChat 昵称、user_id 或私聊内容</small></span></label>
         <button class="form-submit" type="submit">交给 Hermes 审判</button>
       </form>
     </dialog>
@@ -73,10 +82,10 @@
       <p class="eyebrow">CLAWCHAT AGENT</p><h2>Hermes</h2>
       <blockquote>“我不反对你花钱。我只是对你每次都把冲动叫做刚需这件事有意见。”</blockquote>
       <ul><li>先给结论，不写八股文</li><li>只吐槽消费行为，不攻击人</li><li>必须引用申请中的真实证据</li></ul>
-      <button id="addAgentDialog" class="agent-button">去 ClawChat 加好友 ↗</button>
+      <button id="addAgentDialog" class="agent-button">复制 ClawChat 账号 ↗</button>
     </dialog>
 
     <div id="toast" class="toast" hidden></div>
-    <script type="module" src="/app.js"></script>
+    <script type="module" src="/app.js?v=20260921b"></script>
   </body>
 </html>

@@ -22,6 +22,18 @@ test("health endpoint and shared chat/liveware flow", async () => {
       body: JSON.stringify({ applicantId: "user-a", applicantNickname: "阿甲", title: "人体工学椅", reason: "改善坐姿" }),
     }).then((response) => response.json());
     assert.match(created.request.id, /^oa-/);
+    const scoped = await fetch(`${base}/api/agent/requests?applicantId=user-a`, {
+      headers: { authorization: "Bearer test-token" },
+    }).then((response) => response.json());
+    assert.equal(scoped.requests.length, 1);
+    const otherScoped = await fetch(`${base}/api/agent/requests?applicantId=user-b`, {
+      headers: { authorization: "Bearer test-token" },
+    }).then((response) => response.json());
+    assert.equal(otherScoped.requests.length, 0);
+    const unscoped = await fetch(`${base}/api/agent/requests`, {
+      headers: { authorization: "Bearer test-token" },
+    });
+    assert.equal(unscoped.status, 400);
     const session = await fetch(`${base}/api/session`, { headers: { "x-clawchat-user-id": "user-a", "x-clawchat-nickname": encodeURIComponent("阿甲") } }).then((response) => response.json());
     assert.equal(session.requests[0].id, created.request.id);
     assert.equal(session.requests[0].source, "clawchat-chat");

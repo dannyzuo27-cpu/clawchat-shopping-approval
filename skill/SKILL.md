@@ -18,8 +18,8 @@ description: 在 ClawChat 私聊中创建消费申请，为申请生成短、具
 
 ## 环境
 
-- `SHOPPING_APPROVAL_API`：服务地址，例如 `http://127.0.0.1:4174`
-- `SHOPPING_APPROVAL_TOKEN`：服务端 `.env` 的令牌，只能安全保存，不能展示
+- 已部署的服务位于 `/opt/data/workspace/clawchat-consumption-court`。使用其中的 `scripts/agent-bridge.mjs` 访问共享数据；脚本自行读取服务端 `.env`，不得输出或复述令牌。
+- 页面提交与聊天提交共用同一数据库。只在当前对话或用户明确要求处理时调用桥接脚本；不要自行启动高频模型轮询。
 
 ## 私聊提交消费申请
 
@@ -27,12 +27,12 @@ description: 在 ClawChat 私聊中创建消费申请，为申请生成短、具
 
 1. 提取商品名称、价格、购买理由、已有替代品、图片链接，以及用户是否愿意匿名公开。
 2. 缺少商品名称或理由时只追问缺失项；不为了凑表单问无关问题。
-3. 调用 `POST /api/agent/requests`，传入当前 ClawChat `user_id`、昵称和 `publishToPlaza`。
+3. 用桥接脚本的 `create` 命令提交，传入当前 ClawChat 会话的真实 `user_id`、昵称和 `publishToPlaza`。不能从昵称猜 `user_id`。
 4. 保存返回的 `request.id`；重试与后续更新必须复用，禁止重复创建。
 5. 根据下方规则写判词，调用 `PATCH /api/agent/requests/{id}/recommendation`。
 6. 告诉用户结论，并说明是否已匿名进入广场。
 
-Liveware 页面产生的申请已经在同一 API 中。读取 `GET /api/agent/requests` 后直接按原 ID 回写，不得另建一条。
+Liveware 页面产生的申请已经在同一 API 中。调用桥接脚本的 `pending <当前会话 ClawChat user_id>` 命令后，只处理这个人的待审单，再按原 ID 用 `recommend` 回写，不得另建一条。绝不能传其他人的 ID 或把返回结果转述给其他用户。页面投稿不会自动唤醒模型；用户在聊天中让你处理时再处理，以控制费用。
 
 ## 判词规则
 
@@ -58,12 +58,13 @@ Liveware 页面产生的申请已经在同一 API 中。读取 `GET /api/agent/r
 ## 接口顺序
 
 ```text
-POST /api/agent/requests
-PATCH /api/agent/requests/{request_id}/recommendation
-GET /api/plaza
-POST /api/plaza/{request_id}/vote   # 由带 ClawChat 身份的 Liveware 用户调用
+node /opt/data/workspace/clawchat-consumption-court/scripts/agent-bridge.mjs pending <当前会话 ClawChat user_id>
+node /opt/data/workspace/clawchat-consumption-court/scripts/agent-bridge.mjs recommend <request_id> approve|reject <短判词>
+node /opt/data/workspace/clawchat-consumption-court/scripts/agent-bridge.mjs create '<包含 applicantId、title、reason 等字段的 JSON>'
 ```
 
 Agent 回写的 `verdict` 使用 `approve`、`reject`、`need-info` 或 `conditional`。只有 `approve` 与 `reject` 且 `visibility=public` 的申请会进入广场。
+
+处理聊天投稿前先查 `pending`，发现同一用户、同一商品、同一理由的待审单时应复用它，不要再创建。创建成功后记下返回的 ID，同一 ID 不可重复回写不同事实。
 
 旧版记账和共同审批接口继续兼容，但不属于本 Skill 的默认对话流程。
