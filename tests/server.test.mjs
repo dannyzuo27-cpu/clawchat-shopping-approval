@@ -109,6 +109,16 @@ test("public plaza stays anonymous and supports one switchable vote per user", a
     assert.equal(switchedVote.voteCounts.approve, 0);
     assert.equal(switchedVote.voteCounts.reject, 1);
 
+    const addedComment = await fetch(`${base}/api/plaza/${created.request.id}/comments`, {
+      method: "POST", headers: userHeaders, body: JSON.stringify({ text: "五副耳机还不够组成乐队吗？" }),
+    }).then((response) => response.json());
+    assert.equal(addedComment.commentsCount, 1);
+    assert.equal("authorId" in addedComment.comment, false);
+    const withComment = await fetch(`${base}/api/plaza`).then((response) => response.json());
+    const commented = withComment.items.find((item) => item.id === created.request.id);
+    assert.equal(commented.topComments[0].text, "五副耳机还不够组成乐队吗？");
+    assert.equal(JSON.stringify(commented.topComments).includes("secret-user"), false);
+
     const privateCreated = await fetch(`${base}/api/agent/requests`, {
       method: "POST",
       headers: agentHeaders,

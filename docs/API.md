@@ -46,6 +46,19 @@ Content-Type: application/json
 
 `choice` 为 `approve` 或 `reject`。同一 ClawChat 用户对同一申请只保留一个选择；改投时会自动扣除旧票并计入新票。
 
+### 发表匿名锐评
+
+```http
+POST /api/plaza/{request_id}/comments
+Content-Type: application/json
+
+{
+  "text": "具体吐槽消费理由，不攻击申请人"
+}
+```
+
+评论必须为 2—140 个字符。服务端保存 ClawChat `user_id` 用于后续治理，但公开接口只返回稳定的匿名称呼，不返回昵称或 `user_id`。
+
 ### 当前会话
 
 ```http

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f7f8f6" />
     <title>消费审判广场</title>
-    <link rel="stylesheet" href="/styles.css?v=20260921b" />
+    <link rel="stylesheet" href="/styles.css?v=20260923a" />
   </head>
   <body>
     <header class="topbar">
@@ -85,7 +85,19 @@
       <button id="addAgentDialog" class="agent-button">复制 ClawChat 账号 ↗</button>
     </dialog>
 
+    <dialog id="resultDialog" class="result-dialog">
+      <button type="button" class="close" data-close="resultDialog">×</button>
+      <span class="result-check">✓</span>
+      <p class="eyebrow">CASE RECEIVED</p>
+      <h2>申请已经保存</h2>
+      <p id="resultVisibility">这笔申请仅你自己可见</p>
+      <div class="request-id"><span>申请编号</span><code id="resultRequestId"></code></div>
+      <div class="result-next"><strong>还差最后一步</strong><p>复制下面的话发给 Hermes，它才会读取这一笔并给出判词，不会在后台偷偷消耗模型额度。</p></div>
+      <button id="copyReviewPrompt" class="form-submit" type="button">复制私聊话术</button>
+      <button id="copyAgentFromResult" class="result-secondary" type="button">还没加 Hermes？复制他的账号</button>
+    </dialog>
+
     <div id="toast" class="toast" hidden></div>
-    <script type="module" src="/app.js?v=20260921b"></script>
+    <script type="module" src="/app.js?v=20260923a"></script>
   </body>
 </html>

@@ -26,7 +26,7 @@ const mime = {
 };
 
 function emptyStore() {
-  return { version: 3, members: {}, relationships: {}, requests: [], ledger: [], votes: {}, updatedAt: new Date().toISOString() };
+  return { version: 4, members: {}, relationships: {}, requests: [], ledger: [], votes: {}, comments: {}, updatedAt: new Date().toISOString() };
 }
 
 const plazaSeeds = [
@@ -262,6 +262,49 @@ const plazaSeeds = [
   }
 ];
 
+const plazaDemoComments = {
+  "demo-headphones": [
+    ["耳机收藏家", "第六副买回去，前五副会给它开欢迎会吗？"],
+    ["通勤降噪受害者", "颜色可以换耳罩解决，别拿配色冒充刚需。"],
+  ],
+  "demo-camera": [
+    ["四条视频观众", "设备升级得很勤，更新频率倒是很稳定。"],
+    ["器材党观察员", "先用 Action 连续拍十条，再谈 Pocket 的未来。"],
+  ],
+  "demo-chair": [
+    ["腰椎代表", "这单我替你的腰按下通过。"],
+    ["办公室坐牢人", "餐椅坐八小时不是省钱，是分期付款给理疗店。"],
+  ],
+  "demo-photo-printer": [
+    ["相册停更三年", "建议先给旧打印机补一包相纸，看它能不能复工。"],
+    ["仪式感审计员", "一年三次，这不是设备问题，是项目已经停摆。"],
+  ],
+  "demo-dishwasher": [
+    ["家庭和平大使", "能少吵一次架就开始回本了。"],
+    ["今晚不洗碗", "22 次做饭的数据比‘提升幸福感’有说服力多了。"],
+  ],
+  "demo-perfume": [
+    ["鼻子已经工伤", "九瓶八成新，说明每一瓶都曾经‘完全不一样’。"],
+    ["专柜试香纸", "允许闻，不允许带走。"],
+  ],
+  "demo-concert": [
+    ["抢票陪跑选手", "原价、本地、预算内，这已经不是消费审批，是炫耀。"],
+    ["八年老粉", "通过，散场后记得回来提交周边审批。"],
+  ],
+  "demo-treadmill": [
+    ["阳台衣架管理员", "动感单车：所以爱会消失，对吗？"],
+    ["年卡守墓人", "先把健身房打卡次数从 4 变成 14。"],
+  ],
+  "demo-figure": [
+    ["预售观察员", "能惦记一年，已经过了冲动消费的保质期。"],
+    ["柜门测量师", "连位置都量好了，这审批只是走流程。"],
+  ],
+  "demo-keyboard": [
+    ["轴体调解员", "已有静音轴还买静音轴，真正响的是购买欲。"],
+    ["桌搭预算委员会", "配色治愈一次，信用卡账单复发一个月。"],
+  ],
+};
+
 function normalizeStore(store) {
   const normalized = {
     ...emptyStore(),
@@ -271,7 +314,8 @@ function normalizeStore(store) {
     requests: Array.isArray(store?.requests) ? store.requests : [],
     ledger: Array.isArray(store?.ledger) ? store.ledger : [],
     votes: store?.votes || {},
-    version: 3,
+    comments: store?.comments || {},
+    version: 4,
   };
   const ids = new Set(normalized.requests.map((item) => item.id));
   for (const seed of plazaSeeds) if (!ids.has(seed.id)) normalized.requests.push(structuredClone(seed));
@@ -419,15 +463,27 @@ function visible(store, userId) {
   return store.requests.filter((item) => !item.demo && (item.applicantId === userId || item.approverId === userId));
 }
 
+function commentAlias(userId) {
+  const names = ["路过的陪审员", "预算纪律委员", "购物车观察员", "人间清醒代表", "本月账单证人"];
+  const score = [...String(userId)].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return names[score % names.length];
+}
+
 function plazaItems(store, viewerId = "") {
   return store.requests
     .filter((item) => item.visibility === "public" && ["approve", "reject"].includes(item.agentVerdict))
     .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
-    .map(({ applicantId, applicantNickname, approverId, approverNickname, ...item }) => ({
-      ...item,
-      applicantNickname: item.publicAlias || "一位陌生人",
-      viewerVote: viewerId ? store.votes[item.id]?.[viewerId] || null : null,
-    }));
+    .map(({ applicantId, applicantNickname, approverId, approverNickname, ...item }) => {
+      const saved = (store.comments[item.id] || []).map(({ authorId, ...comment }) => comment);
+      const samples = (plazaDemoComments[item.id] || []).map(([author, text], index) => ({ id: `${item.id}-sample-${index}`, author, text, demo: true }));
+      return {
+        ...item,
+        applicantNickname: item.publicAlias || "一位陌生人",
+        viewerVote: viewerId ? store.votes[item.id]?.[viewerId] || null : null,
+        commentsCount: Number(item.commentsCount || 0) + saved.length,
+        topComments: [...saved].reverse().concat(samples).slice(0, 2),
+      };
+    });
 }
 
 async function handleApi(req, res, url) {
@@ -511,6 +567,27 @@ async function handleApi(req, res, url) {
     item.updatedAt = new Date().toISOString();
     await saveStore(store);
     return send(res, 200, { viewerVote: body.choice, voteCounts: item.voteCounts });
+  }
+
+  const comment = url.pathname.match(/^\/api\/plaza\/([^/]+)\/comments$/);
+  if (req.method === "POST" && comment) {
+    const item = store.requests.find((entry) => entry.id === decodeURIComponent(comment[1]) && entry.visibility === "public" && ["approve", "reject"].includes(entry.agentVerdict));
+    if (!item) return send(res, 404, { error: "plaza_item_not_found" });
+    const body = await json(req);
+    const text = String(body.text || "").trim();
+    if (text.length < 2 || text.length > 140) return send(res, 400, { error: "comment_length_invalid" });
+    const entry = {
+      id: `comment-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+      authorId: member.userId,
+      author: commentAlias(member.userId),
+      text,
+      createdAt: new Date().toISOString(),
+    };
+    store.comments[item.id] ||= [];
+    store.comments[item.id].push(entry);
+    await saveStore(store);
+    const { authorId, ...publicComment } = entry;
+    return send(res, 201, { comment: publicComment, commentsCount: Number(item.commentsCount || 0) + store.comments[item.id].length });
   }
 
   if (req.method === "GET" && url.pathname === "/api/session") {
